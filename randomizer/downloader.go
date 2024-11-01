@@ -15,6 +15,27 @@ import (
 	"github.com/google/go-github/v66/github"
 )
 
+type Service struct {
+	// GitHub client
+	client *github.Client
+	repository repository
+
+	// Path to download release tarballs to.
+	downloadPath string 
+
+	// Path to install releases to.
+	installPath string 
+}
+
+func NewService(config *Config) *Service {
+	return &Service{
+		client: github.NewClient(nil),
+		repository: config.repository,
+		downloadPath: config.downloadPath,
+		installPath: config.installPath,
+	}
+}
+
 type Release struct {
 	Version  string
 	AssetURL string
@@ -144,3 +165,4 @@ func (d *Downloader) Install(tarball string) error {
 		}
 	}
 }
+
