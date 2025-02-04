@@ -3,6 +3,7 @@ package python
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -50,6 +51,17 @@ func (i *LocalInterpreter) Path() string {
 	return i.path
 }
 
+func (i *LocalInterpreter) Command(arg ...string) *exec.Cmd {
+	return exec.Command(i.Path(), arg...)
+}
+
 func (i *LocalInterpreter) Version() (string, error) {
-	return "", nil
+	cmd := i.Command("--version")
+	b, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	output := strings.TrimSpace(string(b))
+	version := strings.TrimPrefix(output, "Python ")
+	return version, nil
 }

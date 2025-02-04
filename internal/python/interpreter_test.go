@@ -5,9 +5,12 @@ import (
 	"github.com/jessebrands/triforceblitz/internal/python"
 	"log"
 	"os/exec"
+	"regexp"
 	"strings"
 	"testing"
 )
+
+var pythonVersionRegexp = regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)`)
 
 // findPython searches for a Python interpreter on the system PATH. If no interpreter
 // can be found, an empty string is returned. Check the error for more information.
@@ -70,5 +73,17 @@ func TestLocalInterpreter_Path(t *testing.T) {
 	}
 	if interpreter.Path() != path {
 		t.Errorf("expected interpreter path to be %s, got %s", path, interpreter.Path())
+	}
+}
+
+func TestLocalInterpreter_Version(t *testing.T) {
+	findPythonOrSkip(t)
+	interpreter, _ := python.FindInterpreter()
+	version, err := interpreter.Version()
+	if err != nil {
+		t.Errorf("expected a non-nil error")
+	}
+	if !pythonVersionRegexp.MatchString(version) {
+		t.Errorf("expected version to match %s", pythonVersionRegexp.String())
 	}
 }
