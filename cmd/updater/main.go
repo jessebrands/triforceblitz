@@ -4,12 +4,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/google/go-github/v68/github"
 	"log/slog"
 	"os"
 	"slices"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/google/go-github/v68/github"
 )
 
 var (
@@ -53,13 +55,19 @@ func install() {
 		packagesToInstall = append(packagesToInstall, pkg)
 	}
 
+	var wg sync.WaitGroup
 	for _, pkg := range packagesToInstall {
-		if err := manager.Install(context.Background(), pkg.Version); err != nil {
-			slog.Error("Failed to install package.",
-				"version", pkg.Version.String(),
-				"error", err)
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := manager.Install(context.Background(), pkg.Version); err != nil {
+				slog.Error("Failed to install package.",
+					"version", pkg.Version.String(),
+					"error", err)
+			}
+		}()
 	}
+	wg.Wait()
 }
 
 func main() {
