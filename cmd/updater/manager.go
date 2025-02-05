@@ -29,13 +29,13 @@ func (m *PackageManager) AddSource(source Source) {
 // Update updates the PackageManager's package index.
 func (m *PackageManager) Update(ctx context.Context) error {
 	for _, s := range m.sources {
-		packages, err := s.ListAvailable(ctx)
-		if err != nil {
-			slog.Warn("Could not get available packages from source. Skipping.",
+		if err := s.Update(ctx); err != nil {
+			slog.Warn("Could not update source package index. Skipping.",
 				"source", SourceIdentifier(s),
 				"error", err)
 			continue
 		}
+		packages := s.GetAllPackages()
 		for _, pkg := range packages {
 			version := pkg.GetVersion()
 			if info, ok := m.index[version]; !ok {
@@ -65,4 +65,46 @@ func (m *PackageManager) AvailablePackages() []PackageInfo {
 		return packages[j].PublishedAt.Before(packages[i].PublishedAt)
 	})
 	return packages
+}
+
+func (m *PackageManager) HasPackage(version generator.Version) bool {
+	_, ok := m.index[version]
+	return ok
+}
+
+// GetPackageDir returns the installation path for a specific package.
+func (m *PackageManager) GetPackageDir(version generator.Version) string {
+	return filepath.Join(m.installDir, version.String())
+}
+
+// Install attempts to install a generator.Generator to the installation directory managed
+// by the PackageManager.
+func (m *PackageManager) Install(ctx context.Context, version generator.Version) error {
+	if m.IsInstalled(version) {
+		return nil
+	}
+	info, ok := m.index[version]
+	if !ok {
+		return errors.New("package not available")
+	}
+	destination := os.TempDir()
+	for _, s := range info.Sources {
+		if err := s.UnpackPackage(ctx, version, destination); err != nil {
+			continue
+		}
+	}
+	return errors.New("failed to install")
+}
+
+func (m *PackageManager) IsInstalled(version generator.Version) bool {
+	path := m.GetPackageDir(version)
+	metadata := filepath.Join(path, generator.MetadataFilename)
+	entrypoint := filepath.Join(path, generator.EntrypointFilename)
+	if _, err := os.Stat(metadata); err != nil {
+		return false
+	}
+	if _, err := os.Stat(entrypoint); err != nil {
+		return false
+	}
+	return true
 }

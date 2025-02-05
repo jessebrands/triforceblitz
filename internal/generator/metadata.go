@@ -8,8 +8,9 @@ import (
 
 // Metadata describes the metadata of a Generator.
 type Metadata struct {
-	Version string
-	Presets []Preset
+	Version    string
+	Prerelease bool
+	Presets    []Preset
 }
 
 // Validate validates the contents of the Metadata.
