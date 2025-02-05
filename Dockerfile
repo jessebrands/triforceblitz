@@ -10,14 +10,20 @@ COPY . /usr/src/triforceblitz
 RUN go build -o /usr/local/bin/triforceblitz-server ./cmd/server
 RUN go build -o /usr/local/bin/triforceblitz-updater ./cmd/updater
 
+
 FROM build AS test
 WORKDIR /usr/src/triforceblitz
 RUN go test -v ./...
 
+
 FROM debian:bookworm-slim AS environment
+ENV TRIFORCEBLITZ_GENERATORS_DIR=/usr/local/share/triforceblitz/generators
+ENV TRIFORCEBLITZ_PACKAGE_CACHE_DIR=/var/cache/triforceblitz/packages
 RUN apt-get update -y && apt-get install -y \
     ca-certificates \
     python3
+
+COPY --from=build /usr/local/bin/triforceblitz-updater /usr/local/bin/
 
 RUN mkdir -p /usr/local/share/triforceblitz/generators \
     && mkdir -p /var/cache/triforceblitz/packages
@@ -26,16 +32,16 @@ RUN useradd --system --shell /bin/bash triforceblitz
 RUN chown triforceblitz:triforceblitz -R /usr/local/share/triforceblitz \
     && chown triforceblitz:triforceblitz -R /var/cache/triforceblitz
 
+USER triforceblitz:triforceblitz
+RUN triforceblitz-updater install -b blitz && rm -rf /var/cache/triforceblitz/packages/
+
+
 FROM environment AS release
 ENV TRIFORCEBLITZ_GENERATORS_DIR=/usr/local/share/triforceblitz/generators
 ENV TRIFORCEBLITZ_PACKAGE_CACHE_DIR=/var/cache/triforceblitz/packages
 
-COPY --from=build /usr/local/bin/triforceblitz-* /usr/local/bin/
+COPY --from=build /usr/local/bin/triforceblitz-server /usr/local/bin/
 
 USER triforceblitz:triforceblitz
-
-# Install all generators and clear the package cache.
-RUN triforceblitz-updater install -b blitz && rm -rf /var/cache/triforceblitz/packages/
-
 EXPOSE 8000
 ENTRYPOINT ["triforceblitz-server"]
