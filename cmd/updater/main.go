@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/go-github/v68/github"
-	"log"
+	"log/slog"
 	"os"
 	"time"
 )
@@ -15,15 +15,13 @@ var (
 
 // listPackages lists all generator packages available.
 func listPackages() {
-	packages, err := manager.AvailablePackages(context.Background())
-	if err != nil {
-		log.Fatal(err)
-	}
+	packages := manager.AvailablePackages()
+
 	// List the available packages:
 	fmt.Printf("%-25s %-37s %-20s\n", "Version", "Installed", "Published at")
-	for version, info := range packages {
+	for _, info := range packages {
 		fmt.Printf("%-25.25s %-37.37v %-20.20s\n",
-			version.String(),
+			info.Version.String(),
 			info.Installed,
 			info.PublishedAt.Format(time.RFC3339))
 	}
@@ -33,6 +31,9 @@ func main() {
 	// Initialize the package manager.
 	client := github.NewClient(nil)
 	manager.AddSource(NewGitHubSource(client, "Elagatua", "OoT-Randomizer"))
+	if err := manager.Update(context.Background()); err != nil {
+		slog.Error("Could not refresh package index.", "error", err)
+	}
 
 	// Invoke the package manager.
 	command := os.Args[1]
