@@ -2,13 +2,7 @@ package main
 
 import (
 	"context"
-	"time"
 )
-
-type Package struct {
-	Version     string
-	PublishedAt time.Time
-}
 
 type Source interface {
 	// ListAvailable returns a list of available Packages from this Source.
@@ -19,4 +13,8 @@ type Source interface {
 
 	// Name returns a name uniquely identifying this Source.
 	Name() string
+}
+
+func SourceIdentifier(source Source) string {
+	return source.Type() + ":" + source.Name()
 }
