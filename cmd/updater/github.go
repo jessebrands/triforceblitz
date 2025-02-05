@@ -4,23 +4,30 @@ import (
 	"context"
 	"github.com/google/go-github/v68/github"
 	"github.com/jessebrands/triforceblitz/internal/generator"
+	"time"
 )
 
-type GithubSource struct {
+type GitHubSource struct {
 	client *github.Client
 	Owner  string
 	Repo   string
 }
 
-func NewGitHubSource(client *github.Client, owner, repo string) *GithubSource {
-	return &GithubSource{
+type GitHubPackage struct {
+	Version     generator.Version
+	PublishedAt time.Time
+	TarballUrl  string
+}
+
+func NewGitHubSource(client *github.Client, owner, repo string) *GitHubSource {
+	return &GitHubSource{
 		client: client,
 		Owner:  owner,
 		Repo:   repo,
 	}
 }
 
-func (s *GithubSource) ListAvailable(ctx context.Context) ([]Package, error) {
+func (s *GitHubSource) ListAvailable(ctx context.Context) ([]Package, error) {
 	var packages []Package
 	opt := &github.ListOptions{PerPage: 100}
 	for {
@@ -35,9 +42,10 @@ func (s *GithubSource) ListAvailable(ctx context.Context) ([]Package, error) {
 				// No need to report an error, just continue.
 				continue
 			}
-			packages = append(packages, Package{
+			packages = append(packages, &GitHubPackage{
 				Version:     version,
 				PublishedAt: r.GetPublishedAt().Time,
+				TarballUrl:  r.GetTarballURL(),
 			})
 		}
 		if resp.NextPage == 0 {
@@ -48,14 +56,22 @@ func (s *GithubSource) ListAvailable(ctx context.Context) ([]Package, error) {
 	return packages, nil
 }
 
-func (s *GithubSource) Type() string {
+func (s *GitHubSource) Type() string {
 	return "github"
 }
 
-func (s *GithubSource) Name() string {
+func (s *GitHubSource) Name() string {
 	return s.Owner + "/" + s.Repo
 }
 
-func (s *GithubSource) String() string {
+func (s *GitHubSource) String() string {
 	return SourceIdentifier(s)
+}
+
+func (p *GitHubPackage) GetVersion() generator.Version {
+	return p.Version
+}
+
+func (p *GitHubPackage) GetPublishedAt() time.Time {
+	return p.PublishedAt
 }

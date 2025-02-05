@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-type Package struct {
-	Version     generator.Version
-	PublishedAt time.Time
+type Package interface {
+	GetVersion() generator.Version
+	GetPublishedAt() time.Time
 }
 
 type PackageInfo struct {

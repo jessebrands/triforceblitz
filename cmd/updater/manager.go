@@ -32,17 +32,18 @@ func (m *PackageManager) AvailablePackages(ctx context.Context) (PackageListing,
 			continue
 		}
 		for _, pkg := range packages {
-			if info, ok := listing[pkg.Version]; !ok {
-				listing[pkg.Version] = PackageInfo{
-					Version:     pkg.Version,
-					PublishedAt: pkg.PublishedAt,
+			version := pkg.GetVersion()
+			if info, ok := listing[version]; !ok {
+				listing[version] = PackageInfo{
+					Version:     version,
+					PublishedAt: pkg.GetPublishedAt(),
 					Sources:     []Source{s},
 					Installed:   false,
 				}
 			} else {
 				info.Sources = append(info.Sources, s)
-				if pkg.PublishedAt.Before(info.PublishedAt) {
-					info.PublishedAt = pkg.PublishedAt
+				if pkg.GetPublishedAt().Before(info.PublishedAt) {
+					info.PublishedAt = pkg.GetPublishedAt()
 				}
 			}
 		}
