@@ -2,15 +2,19 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"github.com/google/go-github/v68/github"
 	"log/slog"
 	"os"
+	"slices"
+	"strings"
 	"time"
 )
 
 var (
-	manager = NewPackageManager(os.Getenv("TRIFORCEBLITZ_GENERATORS_DIR"))
+	cacheDir = os.Getenv("TRIFORCEBLITZ_PACKAGE_CACHE_DIR")
+	manager  = NewPackageManager(os.Getenv("TRIFORCEBLITZ_GENERATORS_DIR"))
 )
 
 // listPackages lists all generator packages available.
@@ -27,10 +31,41 @@ func listPackages() {
 	}
 }
 
+func install() {
+	var whitelist []string
+
+	installFlags := flag.NewFlagSet("install", flag.ContinueOnError)
+	branches := installFlags.String("b", "", "comma-separated list of branches to include")
+	if err := installFlags.Parse(os.Args[2:]); err != nil {
+		panic(err)
+	}
+
+	if branches != nil {
+		whitelist = strings.Split(*branches, ",")
+	}
+
+	var packagesToInstall []PackageInfo
+	packages := manager.AvailablePackages()
+	for _, pkg := range packages {
+		if len(whitelist) >= 1 && !slices.Contains(whitelist, pkg.Version.Branch) {
+			continue
+		}
+		packagesToInstall = append(packagesToInstall, pkg)
+	}
+
+	for _, pkg := range packagesToInstall {
+		if err := manager.Install(context.Background(), pkg.Version); err != nil {
+			slog.Error("Failed to install package.",
+				"version", pkg.Version.String(),
+				"error", err)
+		}
+	}
+}
+
 func main() {
 	// Initialize the package manager.
 	client := github.NewClient(nil)
-	manager.AddSource(NewGitHubSource(client, "Elagatua", "OoT-Randomizer"))
+	manager.AddSource(NewGitHubSource(client, "Elagatua", "OoT-Randomizer", cacheDir))
 	if err := manager.Update(context.Background()); err != nil {
 		slog.Error("Could not refresh package index.", "error", err)
 	}
@@ -40,6 +75,9 @@ func main() {
 	switch command {
 	case "list":
 		listPackages()
+
+	case "install":
+		install()
 
 	default:
 		// Print out a useful help guide.

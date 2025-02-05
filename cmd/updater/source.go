@@ -15,7 +15,7 @@ type Source interface {
 	// GetPackage gets a Package from the Source.
 	GetPackage(version generator.Version) (Package, error)
 
-	// DownloadPackage downloads a package from the Source to the destination
+	// DownloadPackage downloads a package from the Source to the destination.
 	DownloadPackage(ctx context.Context, version generator.Version, destination string) error
 
 	// UnpackPackage unpacks a package with the given version to the destination folder.
