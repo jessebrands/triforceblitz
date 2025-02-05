@@ -8,9 +8,9 @@ import (
 
 // Metadata describes the metadata of a Generator.
 type Metadata struct {
-	Version    string
-	Prerelease bool
-	Presets    []Preset
+	Version    string   `json:"version"`
+	Prerelease bool     `json:"prerelease,omitempty"`
+	Presets    []Preset `json:"presets"`
 }
 
 // Validate validates the contents of the Metadata.

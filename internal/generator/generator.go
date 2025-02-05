@@ -13,9 +13,9 @@ type Generator struct {
 }
 
 type Preset struct {
-	Id      string
-	Preset  string
-	Ordinal int
+	Id      string `json:"id"`
+	Preset  string `json:"preset"`
+	Ordinal int    `json:"ordinal,omitempty"`
 }
 
 func (g *Generator) String() string {
