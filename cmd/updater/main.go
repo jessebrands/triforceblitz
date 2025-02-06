@@ -35,7 +35,7 @@ func install(args []string) {
 	var whitelist []string
 
 	installFlags := flag.NewFlagSet("install", flag.ExitOnError)
-	branches := installFlags.String("b", "", "comma-separated list of branches to include.")
+	branches := installFlags.String("b", "blitz", "comma-separated list of branches to include.")
 	noCache := installFlags.Bool("no-cache", false, "disable caching of package files.")
 	if err := installFlags.Parse(args); err != nil {
 		panic(err)
