@@ -53,7 +53,7 @@ RUN chown triforceblitz:triforceblitz -R /usr/local/share/triforceblitz \
     && chown triforceblitz:triforceblitz -R /var/cache/triforceblitz
 
 USER triforceblitz:triforceblitz
-RUN triforceblitz-updater install -b blitz && rm -rf /var/cache/triforceblitz/packages/
+RUN triforceblitz-updater install -no-cache -b blitz
 
 
 # Release stage. This is the actual image. We copy over the built server
