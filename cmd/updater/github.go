@@ -167,6 +167,17 @@ func (s *GitHubSource) UnpackPackage(ctx context.Context, version generator.Vers
 	return nil
 }
 
+func (s *GitHubSource) PurgePackage(ctx context.Context, version generator.Version) error {
+	name := s.getPackageTarball(version)
+	if _, err := os.Stat(name); err == nil {
+		return os.Remove(s.getPackageTarball(version))
+	} else if errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else {
+		return err
+	}
+}
+
 func (s *GitHubSource) IsCached(version generator.Version) bool {
 	if _, err := os.Stat(s.getPackageTarball(version)); err == nil {
 		return true

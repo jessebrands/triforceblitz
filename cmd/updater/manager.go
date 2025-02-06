@@ -179,3 +179,17 @@ func (m *PackageManager) Configure(version generator.Version) error {
 	}
 	return nil
 }
+
+// Purge removes a package from the cache.
+func (m *PackageManager) Purge(ctx context.Context, version generator.Version) error {
+	pkg, err := m.GetPackage(version)
+	if err != nil {
+		return err
+	}
+	for _, source := range pkg.Sources {
+		if err := source.PurgePackage(ctx, version); err != nil {
+			return err
+		}
+	}
+	return nil
+}

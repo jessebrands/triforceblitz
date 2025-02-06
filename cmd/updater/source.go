@@ -21,6 +21,9 @@ type Source interface {
 	// UnpackPackage unpacks a package with the given version to the destination folder.
 	UnpackPackage(ctx context.Context, version generator.Version, destination string) error
 
+	// PurgePackage purges a package from the cache.
+	PurgePackage(ctx context.Context, version generator.Version) error
+
 	// IsCached returns whether the version is in the cache.
 	IsCached(version generator.Version) bool
 
