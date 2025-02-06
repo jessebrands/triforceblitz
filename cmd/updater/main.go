@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"slices"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/google/go-github/v68/github"
@@ -36,7 +34,7 @@ func listPackages() {
 func install() {
 	var whitelist []string
 
-	installFlags := flag.NewFlagSet("install", flag.ContinueOnError)
+	installFlags := flag.NewFlagSet("install", flag.ExitOnError)
 	branches := installFlags.String("b", "", "comma-separated list of branches to include")
 	if err := installFlags.Parse(os.Args[2:]); err != nil {
 		panic(err)
@@ -46,28 +44,10 @@ func install() {
 		whitelist = strings.Split(*branches, ",")
 	}
 
-	var packagesToInstall []PackageInfo
-	packages := manager.AvailablePackages()
-	for _, pkg := range packages {
-		if len(whitelist) >= 1 && !slices.Contains(whitelist, pkg.Version.Branch) {
-			continue
-		}
-		packagesToInstall = append(packagesToInstall, pkg)
+	installer := NewInstaller(manager)
+	if _, err := installer.InstallAll(whitelist); err != nil {
+		panic(err)
 	}
-
-	var wg sync.WaitGroup
-	for _, pkg := range packagesToInstall {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := manager.Install(context.Background(), pkg.Version); err != nil {
-				slog.Error("Failed to install package.",
-					"version", pkg.Version.String(),
-					"error", err)
-			}
-		}()
-	}
-	wg.Wait()
 }
 
 func main() {
