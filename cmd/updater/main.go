@@ -31,12 +31,13 @@ func listPackages() {
 	}
 }
 
-func install() {
+func install(args []string) {
 	var whitelist []string
 
 	installFlags := flag.NewFlagSet("install", flag.ExitOnError)
-	branches := installFlags.String("b", "", "comma-separated list of branches to include")
-	if err := installFlags.Parse(os.Args[2:]); err != nil {
+	branches := installFlags.String("b", "", "comma-separated list of branches to include.")
+	noCache := installFlags.Bool("no-cache", false, "disable caching of package files.")
+	if err := installFlags.Parse(args); err != nil {
 		panic(err)
 	}
 
@@ -45,6 +46,7 @@ func install() {
 	}
 
 	installer := NewInstaller(manager)
+	installer.CachePackages = !*noCache
 	if _, err := installer.InstallAll(whitelist); err != nil {
 		panic(err)
 	}
@@ -65,7 +67,7 @@ func main() {
 		listPackages()
 
 	case "install":
-		install()
+		install(os.Args[2:])
 
 	default:
 		// Print out a useful help guide.

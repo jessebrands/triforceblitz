@@ -18,13 +18,15 @@ func (w *Whitelist) Includes(s string) bool {
 // Installer provides a convenient interface over PackageManager for
 // installing generator packages.
 type Installer struct {
-	manager *PackageManager
+	manager       *PackageManager
+	CachePackages bool
 }
 
 // NewInstaller creates a new Installer.
 func NewInstaller(manager *PackageManager) *Installer {
 	return &Installer{
-		manager: manager,
+		manager:       manager,
+		CachePackages: true,
 	}
 }
 
@@ -103,6 +105,13 @@ func (i *Installer) install(ctx context.Context, version generator.Version) erro
 	if err := i.manager.Unpack(ctx, version, tempDir); err != nil {
 		return err
 	}
+	if !i.CachePackages {
+		fmt.Printf("Removing package %s from cache\n", version.String())
+		if err := i.manager.Purge(ctx, version); err != nil {
+			// This is not a fatal error, just inform the user and continue.
+			fmt.Printf("Error removing package %s from cache: %s\n", version.String(), err.Error())
+		}
+	}
 	fmt.Printf("Installing generator %s\n", version.String())
 	if err := i.manager.Install(version, tempDir); err != nil {
 		return err
@@ -123,8 +132,7 @@ func (i *Installer) parallelInstall(ctx context.Context, versions []generator.Ve
 		go func() {
 			defer wg.Done()
 			if err := i.install(ctx, v); err != nil {
-				fmt.Printf("Error installing generator %s: %s\n", v.String(), err)
-				panic(err)
+				fmt.Printf("Failed to install generator %s: %s\n", v.String(), err.Error())
 			}
 		}()
 	}
