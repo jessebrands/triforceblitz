@@ -15,11 +15,14 @@ type Source interface {
 	// GetPackage gets a Package from the Source.
 	GetPackage(version generator.Version) (Package, error)
 
-	// DownloadPackage downloads a package from the Source to the destination.
-	DownloadPackage(ctx context.Context, version generator.Version, destination string) error
+	// DownloadPackage downloads a package from the Source to the cache.
+	DownloadPackage(ctx context.Context, version generator.Version) error
 
 	// UnpackPackage unpacks a package with the given version to the destination folder.
 	UnpackPackage(ctx context.Context, version generator.Version, destination string) error
+
+	// IsCached returns whether the version is in the cache.
+	IsCached(version generator.Version) bool
 
 	// Type returns a string identifying the type of the Source.
 	Type() string

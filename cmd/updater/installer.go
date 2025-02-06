@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jessebrands/triforceblitz/internal/generator"
+	"os"
 	"slices"
 	"sync"
 )
@@ -57,12 +58,13 @@ func (i *Installer) InstallAll(whitelist Whitelist) ([]generator.Version, error)
 func (i *Installer) collect(versions []generator.Version) ([]generator.Version, error) {
 	var candidates []generator.Version
 	for _, v := range versions {
-		if i.manager.IsInstalled(v) {
-			fmt.Printf("Package '%s' is already installed\n", v.String())
-			continue
+		pkg, err := i.manager.GetPackage(v)
+		if err != nil {
+			return []generator.Version{}, err
 		}
-		if !i.manager.HasPackage(v) {
-			return candidates, ErrPackageNotFound
+		if pkg.IsInstalled() {
+			fmt.Printf("Generator %s is already installed\n", v.String())
+			continue
 		}
 		candidates = append(candidates, v)
 	}
@@ -72,12 +74,45 @@ func (i *Installer) collect(versions []generator.Version) ([]generator.Version, 
 func (i *Installer) collectAll(whitelist Whitelist) ([]generator.Version, error) {
 	var candidates []generator.Version
 	for _, pkg := range i.manager.AvailablePackages() {
-		if pkg.Installed || !whitelist.Includes(pkg.Version.Branch) {
+		if pkg.IsInstalled() || !whitelist.Includes(pkg.Version.Branch) {
 			continue
 		}
 		candidates = append(candidates, pkg.Version)
 	}
 	return candidates, nil
+}
+
+func (i *Installer) install(ctx context.Context, version generator.Version) error {
+	fmt.Printf("Selecting generator %s\n", version.String())
+	if !i.manager.IsCached(version) {
+		fmt.Printf("Downloading package %s\n", version.String())
+		err := i.manager.Download(ctx, version)
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Printf("Using cached package %s\n", version.String())
+	}
+	// Create a temporary directory to store the unpacked files.
+	tempDir, err := os.MkdirTemp("", "TriforceBlitz")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tempDir)
+	fmt.Printf("Unpacking package %s\n", version.String())
+	if err := i.manager.Unpack(ctx, version, tempDir); err != nil {
+		return err
+	}
+	fmt.Printf("Installing generator %s\n", version.String())
+	if err := i.manager.Install(version, tempDir); err != nil {
+		return err
+	}
+	fmt.Printf("Configuring generator %s\n", version.String())
+	if err := i.manager.Configure(version); err != nil {
+		return err
+	}
+	fmt.Printf("Installed generator %s\n", version.String())
+	return nil
 }
 
 // parallelInstall takes a list of versions and installs them in parallel.
@@ -87,7 +122,8 @@ func (i *Installer) parallelInstall(ctx context.Context, versions []generator.Ve
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := i.manager.Install(ctx, v); err != nil {
+			if err := i.install(ctx, v); err != nil {
+				fmt.Printf("Error installing generator %s: %s\n", v.String(), err)
 				panic(err)
 			}
 		}()

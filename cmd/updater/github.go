@@ -8,7 +8,6 @@ import (
 	"github.com/google/go-github/v68/github"
 	"github.com/jessebrands/triforceblitz/internal/generator"
 	"io"
-	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -42,15 +41,8 @@ func NewGitHubSource(client *github.Client, owner, repo string, cacheDir string)
 	}
 }
 
-func (s *GitHubSource) getCacheFilename(version generator.Version) string {
+func (s *GitHubSource) getPackageTarball(version generator.Version) string {
 	return filepath.Join(s.cacheDir, version.String()+".tar.gz")
-}
-
-func (s *GitHubSource) isCached(version generator.Version) bool {
-	if _, err := os.Stat(s.getCacheFilename(version)); err == nil {
-		return true
-	}
-	return false
 }
 
 func (s *GitHubSource) Update(ctx context.Context) error {
@@ -98,33 +90,32 @@ func (s *GitHubSource) GetPackage(version generator.Version) (Package, error) {
 	if pkg, ok := s.index[version]; ok {
 		return pkg, nil
 	}
-	return nil, errors.New("package not found")
+	return nil, ErrPackageNotFound
 }
 
-func (s *GitHubSource) DownloadPackage(ctx context.Context, version generator.Version, destination string) error {
-	if s.isCached(version) {
+func (s *GitHubSource) DownloadPackage(ctx context.Context, version generator.Version) error {
+	if s.IsCached(version) {
 		return nil
 	}
 	pkg, err := s.GetPackage(version)
 	if err != nil {
 		return err
 	}
-	return pkg.Download(ctx, destination)
-}
-
-func (s *GitHubSource) UnpackPackage(ctx context.Context, version generator.Version, destination string) error {
-	filename := s.getCacheFilename(version)
-	// Ensure the cache directory exists!
+	// Create cache directory.
+	filename := s.getPackageTarball(version)
 	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
 		return err
 	}
-	if err := s.DownloadPackage(ctx, version, filename); err != nil {
-		return err
+	return pkg.Download(ctx, filename)
+}
+
+func (s *GitHubSource) UnpackPackage(ctx context.Context, version generator.Version, destination string) error {
+	if !s.IsCached(version) {
+		if err := s.DownloadPackage(ctx, version); err != nil {
+			return err
+		}
 	}
-	slog.Info("Unpacking package.",
-		"version", version.String(),
-		"source", filename,
-		"destination", destination)
+	filename := s.getPackageTarball(version)
 	// We got our tarball, open a stream to it.
 	f, err := os.Open(filename)
 	if err != nil {
@@ -176,6 +167,13 @@ func (s *GitHubSource) UnpackPackage(ctx context.Context, version generator.Vers
 	return nil
 }
 
+func (s *GitHubSource) IsCached(version generator.Version) bool {
+	if _, err := os.Stat(s.getPackageTarball(version)); err == nil {
+		return true
+	}
+	return false
+}
+
 func (s *GitHubSource) Type() string {
 	return "github"
 }
@@ -189,11 +187,6 @@ func (s *GitHubSource) String() string {
 }
 
 func (p *GitHubPackage) Download(ctx context.Context, destination string) error {
-	slog.Info("Downloading package.",
-		"version", p.Version.String(),
-		"source", p.TarballUrl,
-		"destination", destination)
-
 	f, err := os.Create(destination)
 	if err != nil {
 		return err

@@ -26,7 +26,7 @@ func listPackages() {
 	for _, info := range packages {
 		fmt.Printf("%-25.25s %-37.37v %-20.20s\n",
 			info.Version.String(),
-			info.Installed,
+			info.IsInstalled(),
 			info.PublishedAt.Format(time.RFC3339))
 	}
 }

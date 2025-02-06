@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/jessebrands/triforceblitz/internal/generator"
 	"io/fs"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -34,9 +33,6 @@ func (m *PackageManager) AddSource(source Source) {
 func (m *PackageManager) Update(ctx context.Context) error {
 	for _, s := range m.sources {
 		if err := s.Update(ctx); err != nil {
-			slog.Warn("Could not update source package index. Skipping.",
-				"source", SourceIdentifier(s),
-				"error", err)
 			continue
 		}
 		packages := s.GetAllPackages()
@@ -47,7 +43,7 @@ func (m *PackageManager) Update(ctx context.Context) error {
 					Version:     version,
 					PublishedAt: pkg.GetPublishedAt(),
 					Sources:     []Source{s},
-					Installed:   m.IsInstalled(version),
+					installDir:  m.installationDir(version),
 				}
 			} else {
 				info.Sources = append(info.Sources, s)
@@ -58,6 +54,14 @@ func (m *PackageManager) Update(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (m *PackageManager) GetPackage(version generator.Version) (PackageInfo, error) {
+	if info, ok := m.index[version]; ok {
+		return info, nil
+	} else {
+		return info, ErrPackageNotFound
+	}
 }
 
 func (m *PackageManager) AvailablePackages() []PackageInfo {
@@ -72,12 +76,12 @@ func (m *PackageManager) AvailablePackages() []PackageInfo {
 }
 
 func (m *PackageManager) HasPackage(version generator.Version) bool {
-	_, ok := m.index[version]
-	return ok
+	_, err := m.GetPackage(version)
+	return err == nil
 }
 
-// GetPackageDir returns the installation path for a specific package.
-func (m *PackageManager) GetPackageDir(version generator.Version) string {
+// installationDir returns the installation directory for a specific package.
+func (m *PackageManager) installationDir(version generator.Version) string {
 	return filepath.Join(m.installDir, version.String())
 }
 
@@ -101,72 +105,77 @@ func (m *PackageManager) findEntrypoint(name string) (string, error) {
 	return entrypoint, nil
 }
 
-func (m *PackageManager) installPackageFromSource(ctx context.Context, s Source, version generator.Version) error {
-	destination, err := os.MkdirTemp("", "TriforceBlitz")
-	defer os.RemoveAll(destination)
-	if err != nil {
-		return err
-	}
-	if err := s.UnpackPackage(ctx, version, destination); err != nil {
-		slog.Warn("Failed to retrieve package from source.",
-			"version", version.String(),
-			"source", SourceIdentifier(s),
-			"error", err)
-		return err
-	}
-	entrypoint, err := m.findEntrypoint(destination)
-	if err != nil {
-		slog.Warn("Failed to find entrypoint.",
-			"destination", destination,
-			"version", version.String(),
-			"source", SourceIdentifier(s),
-			"error", err)
-		return err
-	}
-	generatorRoot := filepath.Dir(entrypoint)
-	installDir := m.GetPackageDir(version)
-	if err := os.CopyFS(installDir, os.DirFS(generatorRoot)); err != nil {
-		return err
-	}
-	slog.Info("Successfully installed package.",
-		"version", version.String(),
-		"path", installDir)
-
-	metadataFilename := filepath.Join(installDir, generator.MetadataFilename)
-	slog.Info("Creating generator metadata for legacy versions.",
-		"version", version.String(),
-		"file", metadataFilename)
-	return WriteMetadataFile(metadataFilename, version)
-}
-
-// Install attempts to install a generator.Generator to the installation directory managed
-// by the PackageManager.
-func (m *PackageManager) Install(ctx context.Context, version generator.Version) error {
-	if m.IsInstalled(version) {
-		return nil
-	}
+func (m *PackageManager) IsCached(version generator.Version) bool {
 	info, ok := m.index[version]
 	if !ok {
-		return errors.New("package not available")
+		return false
 	}
 	for _, s := range info.Sources {
-		if err := m.installPackageFromSource(ctx, s, version); err != nil {
+		if s.IsCached(version) {
+			return true
+		}
+	}
+	return false
+}
+
+// Download downloads a Package to the cache directory.
+func (m *PackageManager) Download(ctx context.Context, version generator.Version) error {
+	info, ok := m.index[version]
+	if !ok {
+		return ErrPackageNotFound
+	}
+	for _, s := range info.Sources {
+		err := s.DownloadPackage(ctx, version)
+		if err != nil {
 			continue
 		}
 		return nil
 	}
-	return errors.New("failed to install")
+	return ErrDownloadFailed
 }
 
-func (m *PackageManager) IsInstalled(version generator.Version) bool {
-	path := m.GetPackageDir(version)
-	metadata := filepath.Join(path, generator.MetadataFilename)
-	entrypoint := filepath.Join(path, generator.EntrypointFilename)
-	if _, err := os.Stat(metadata); err != nil {
-		return false
+func (m *PackageManager) Unpack(ctx context.Context, version generator.Version, destination string) error {
+	if pkg, err := m.GetPackage(version); err != nil {
+		return err
+	} else {
+		for _, s := range pkg.Sources {
+			if !s.IsCached(version) {
+				continue
+			}
+			if err := s.UnpackPackage(ctx, version, destination); err != nil {
+				continue
+			}
+			return nil
+		}
+		return ErrUnpackFailed
 	}
-	if _, err := os.Stat(entrypoint); err != nil {
-		return false
+}
+
+// Install copies the Generator files from the source directory to the installation directory for the given version
+// and updates the package information in the index.
+func (m *PackageManager) Install(version generator.Version, sourceDir string) error {
+	pkg, err := m.GetPackage(version)
+	if err != nil {
+		return err
 	}
-	return true
+	entrypoint, err := m.findEntrypoint(sourceDir)
+	if err != nil {
+		return err
+	}
+	return os.CopyFS(pkg.installDir, os.DirFS(filepath.Dir(entrypoint)))
+}
+
+// Configure sets up a generator so that it can be used.
+func (m *PackageManager) Configure(version generator.Version) error {
+	pkg, err := m.GetPackage(version)
+	if err != nil {
+		return err
+	}
+	// Older generators may not have the metadata file included, in that case
+	// we will want to generate it for them based on some preset data.
+	metadataFilename := filepath.Join(pkg.installDir, generator.MetadataFilename)
+	if _, err := os.Stat(metadataFilename); os.IsNotExist(err) {
+		return CreateMetadataFile(metadataFilename, version)
+	}
+	return nil
 }

@@ -83,7 +83,7 @@ func GetMetadataForVersion(version generator.Version) (generator.Metadata, error
 	return generator.Metadata{}, fmt.Errorf("unsupported version: %s", version.String())
 }
 
-func WriteMetadataFile(name string, version generator.Version) error {
+func CreateMetadataFile(name string, version generator.Version) error {
 	metadata, err := GetMetadataForVersion(version)
 	if err != nil {
 		// Unsupported version, not an error.
