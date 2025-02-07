@@ -12,7 +12,7 @@ import (
 type Whitelist []string
 
 func (w *Whitelist) Includes(s string) bool {
-	return len(*w) >= 1 && slices.Contains(*w, s)
+	return slices.Contains(*w, s)
 }
 
 // Installer provides a convenient interface over PackageManager for
@@ -60,11 +60,9 @@ func (i *Installer) InstallAll(whitelist Whitelist) ([]generator.Version, error)
 func (i *Installer) collect(versions []generator.Version) ([]generator.Version, error) {
 	var candidates []generator.Version
 	for _, v := range versions {
-		pkg, err := i.manager.GetPackage(v)
-		if err != nil {
+		if pkg, err := i.manager.GetPackage(v); err != nil {
 			return []generator.Version{}, err
-		}
-		if pkg.IsInstalled() {
+		} else if pkg.IsInstalled() {
 			fmt.Printf("Generator %s is already installed\n", v.String())
 			continue
 		}

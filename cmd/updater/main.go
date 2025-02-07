@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/jessebrands/triforceblitz/internal/generator"
 	"log/slog"
 	"os"
 	"strings"
@@ -40,6 +41,7 @@ func install(args []string) {
 	if err := installFlags.Parse(args); err != nil {
 		panic(err)
 	}
+	candidates := installFlags.Args()
 
 	if branches != nil {
 		whitelist = strings.Split(*branches, ",")
@@ -47,9 +49,30 @@ func install(args []string) {
 
 	installer := NewInstaller(manager)
 	installer.CachePackages = !*noCache
-	if _, err := installer.InstallAll(whitelist); err != nil {
-		panic(err)
+
+	if len(candidates) > 0 {
+		if _, err := installCandidates(installer, candidates); err != nil {
+			fmt.Printf("Installation failed: %s\n", err.Error())
+		}
+	} else {
+		if _, err := installer.InstallAll(whitelist); err != nil {
+			fmt.Printf("Installation failed: %s\n", err.Error())
+		}
 	}
+}
+
+func installCandidates(installer *Installer, candidates []string) ([]generator.Version, error) {
+	// Turn candidates into versions:
+	var versions []generator.Version
+	for _, c := range candidates {
+		version, err := generator.VersionFromString(c)
+		if err != nil {
+			fmt.Printf("Cannot select candidate %s, not a valid Triforce Blitz version: %s\n", c, err.Error())
+			return nil, err
+		}
+		versions = append(versions, version)
+	}
+	return installer.Install(versions)
 }
 
 func main() {
