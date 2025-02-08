@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -18,7 +19,10 @@ type LocalInterpreter struct {
 }
 
 func pythonExecutableNames() []string {
-	return []string{"python3", "python3.exe", "python", "python.exe"}
+	if runtime.GOOS == "windows" {
+		return []string{"python.exe"}
+	}
+	return []string{"python3", "python"}
 }
 
 func findExecutable(path string, names ...string) (string, error) {
