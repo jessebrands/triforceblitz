@@ -46,7 +46,7 @@ func (s *Service) Synchronize() error {
 		}
 		s.randomizers = append(s.randomizers, &Randomizer{
 			Version: version,
-			Path:    path,
+			Path:    filepath.Dir(path),
 			Presets: metadata.Presets,
 		})
 		return filepath.SkipDir
