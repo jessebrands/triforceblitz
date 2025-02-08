@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"github.com/jessebrands/triforceblitz/internal/generator"
+
+	"github.com/jessebrands/triforceblitz/internal/randomizer"
 )
 
 type Source interface {
@@ -13,19 +14,19 @@ type Source interface {
 	GetAllPackages() []Package
 
 	// GetPackage gets a Package from the Source.
-	GetPackage(version generator.Version) (Package, error)
+	GetPackage(version randomizer.Version) (Package, error)
 
 	// DownloadPackage downloads a package from the Source to the cache.
-	DownloadPackage(ctx context.Context, version generator.Version) error
+	DownloadPackage(ctx context.Context, version randomizer.Version) error
 
 	// UnpackPackage unpacks a package with the given version to the destination folder.
-	UnpackPackage(ctx context.Context, version generator.Version, destination string) error
+	UnpackPackage(ctx context.Context, version randomizer.Version, destination string) error
 
 	// PurgePackage purges a package from the cache.
-	PurgePackage(ctx context.Context, version generator.Version) error
+	PurgePackage(ctx context.Context, version randomizer.Version) error
 
 	// IsCached returns whether the version is in the cache.
-	IsCached(version generator.Version) bool
+	IsCached(version randomizer.Version) bool
 
 	// Type returns a string identifying the type of the Source.
 	Type() string

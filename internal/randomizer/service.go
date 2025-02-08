@@ -1,4 +1,4 @@
-package generator
+package randomizer
 
 import (
 	"io/fs"

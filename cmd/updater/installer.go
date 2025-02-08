@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/jessebrands/triforceblitz/internal/generator"
 	"os"
 	"slices"
 	"sync"
+
+	"github.com/jessebrands/triforceblitz/internal/randomizer"
 )
 
 type Whitelist []string
@@ -32,10 +33,10 @@ func NewInstaller(manager *PackageManager) *Installer {
 
 // Install installs packages based on the given candidates. Returns a list
 // of packages that were installed, if successful.
-func (i *Installer) Install(versions []generator.Version) ([]generator.Version, error) {
+func (i *Installer) Install(versions []randomizer.Version) ([]randomizer.Version, error) {
 	candidates, err := i.collect(versions)
 	if err != nil {
-		return []generator.Version{}, err
+		return []randomizer.Version{}, err
 	}
 	i.parallelInstall(context.Background(), candidates)
 	return candidates, nil
@@ -44,10 +45,10 @@ func (i *Installer) Install(versions []generator.Version) ([]generator.Version, 
 // InstallAll installs all packages in the repository, filtered by a given
 // list of branches to include. If the list is empty, all branches are
 // included. Returns a list of packages that were installed.
-func (i *Installer) InstallAll(whitelist Whitelist) ([]generator.Version, error) {
+func (i *Installer) InstallAll(whitelist Whitelist) ([]randomizer.Version, error) {
 	candidates, err := i.collectAll(whitelist)
 	if err != nil {
-		return []generator.Version{}, err
+		return []randomizer.Version{}, err
 	}
 	return i.Install(candidates)
 }
@@ -57,11 +58,11 @@ func (i *Installer) InstallAll(whitelist Whitelist) ([]generator.Version, error)
 //
 // If the list of versions contains a nonexistent package, collect returns
 // ErrPackageNotFound.
-func (i *Installer) collect(versions []generator.Version) ([]generator.Version, error) {
-	var candidates []generator.Version
+func (i *Installer) collect(versions []randomizer.Version) ([]randomizer.Version, error) {
+	var candidates []randomizer.Version
 	for _, v := range versions {
 		if pkg, err := i.manager.GetPackage(v); err != nil {
-			return []generator.Version{}, err
+			return []randomizer.Version{}, err
 		} else if pkg.IsInstalled() {
 			fmt.Printf("Generator %s is already installed\n", v.String())
 			continue
@@ -71,8 +72,8 @@ func (i *Installer) collect(versions []generator.Version) ([]generator.Version, 
 	return candidates, nil
 }
 
-func (i *Installer) collectAll(whitelist Whitelist) ([]generator.Version, error) {
-	var candidates []generator.Version
+func (i *Installer) collectAll(whitelist Whitelist) ([]randomizer.Version, error) {
+	var candidates []randomizer.Version
 	for _, pkg := range i.manager.AvailablePackages() {
 		if pkg.IsInstalled() || !whitelist.Includes(pkg.Version.Branch) {
 			continue
@@ -82,7 +83,7 @@ func (i *Installer) collectAll(whitelist Whitelist) ([]generator.Version, error)
 	return candidates, nil
 }
 
-func (i *Installer) install(ctx context.Context, version generator.Version) error {
+func (i *Installer) install(ctx context.Context, version randomizer.Version) error {
 	fmt.Printf("Selecting generator %s\n", version.String())
 	if !i.manager.IsCached(version) {
 		fmt.Printf("Downloading package %s\n", version.String())
@@ -123,7 +124,7 @@ func (i *Installer) install(ctx context.Context, version generator.Version) erro
 }
 
 // parallelInstall takes a list of versions and installs them in parallel.
-func (i *Installer) parallelInstall(ctx context.Context, versions []generator.Version) {
+func (i *Installer) parallelInstall(ctx context.Context, versions []randomizer.Version) {
 	var wg sync.WaitGroup
 	for _, v := range versions {
 		wg.Add(1)

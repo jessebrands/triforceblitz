@@ -4,11 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/jessebrands/triforceblitz/internal/generator"
 	"log/slog"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/jessebrands/triforceblitz/internal/randomizer"
 
 	"github.com/google/go-github/v68/github"
 )
@@ -61,11 +62,11 @@ func install(args []string) {
 	}
 }
 
-func installCandidates(installer *Installer, candidates []string) ([]generator.Version, error) {
+func installCandidates(installer *Installer, candidates []string) ([]randomizer.Version, error) {
 	// Turn candidates into versions:
-	var versions []generator.Version
+	var versions []randomizer.Version
 	for _, c := range candidates {
-		version, err := generator.VersionFromString(c)
+		version, err := randomizer.VersionFromString(c)
 		if err != nil {
 			fmt.Printf("Cannot select candidate %s, not a valid Triforce Blitz version: %s\n", c, err.Error())
 			return nil, err

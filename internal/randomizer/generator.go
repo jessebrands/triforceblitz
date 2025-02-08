@@ -1,4 +1,4 @@
-package generator
+package randomizer
 
 const (
 	MetadataFilename   = ".generator-metadata.json"

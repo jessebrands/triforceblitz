@@ -3,14 +3,15 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/jessebrands/triforceblitz/internal/generator"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
+
+	"github.com/jessebrands/triforceblitz/internal/randomizer"
 )
 
-type PackageIndex = map[generator.Version]PackageInfo
+type PackageIndex = map[randomizer.Version]PackageInfo
 
 type PackageManager struct {
 	installDir string
@@ -56,7 +57,7 @@ func (m *PackageManager) Update(ctx context.Context) error {
 	return nil
 }
 
-func (m *PackageManager) GetPackage(version generator.Version) (PackageInfo, error) {
+func (m *PackageManager) GetPackage(version randomizer.Version) (PackageInfo, error) {
 	if info, ok := m.index[version]; ok {
 		return info, nil
 	} else {
@@ -75,13 +76,13 @@ func (m *PackageManager) AvailablePackages() []PackageInfo {
 	return packages
 }
 
-func (m *PackageManager) HasPackage(version generator.Version) bool {
+func (m *PackageManager) HasPackage(version randomizer.Version) bool {
 	_, err := m.GetPackage(version)
 	return err == nil
 }
 
 // installationDir returns the installation directory for a specific package.
-func (m *PackageManager) installationDir(version generator.Version) string {
+func (m *PackageManager) installationDir(version randomizer.Version) string {
 	return filepath.Join(m.installDir, version.String())
 }
 
@@ -89,7 +90,7 @@ func (m *PackageManager) findEntrypoint(name string) (string, error) {
 	entrypoint := ""
 	found := false
 	err := filepath.WalkDir(name, func(path string, d fs.DirEntry, err error) error {
-		if !d.IsDir() && d.Name() == generator.EntrypointFilename {
+		if !d.IsDir() && d.Name() == randomizer.EntrypointFilename {
 			entrypoint = path
 			found = true
 			return filepath.SkipAll
@@ -105,7 +106,7 @@ func (m *PackageManager) findEntrypoint(name string) (string, error) {
 	return entrypoint, nil
 }
 
-func (m *PackageManager) IsCached(version generator.Version) bool {
+func (m *PackageManager) IsCached(version randomizer.Version) bool {
 	info, ok := m.index[version]
 	if !ok {
 		return false
@@ -119,7 +120,7 @@ func (m *PackageManager) IsCached(version generator.Version) bool {
 }
 
 // Download downloads a Package to the cache directory.
-func (m *PackageManager) Download(ctx context.Context, version generator.Version) error {
+func (m *PackageManager) Download(ctx context.Context, version randomizer.Version) error {
 	info, ok := m.index[version]
 	if !ok {
 		return ErrPackageNotFound
@@ -134,7 +135,7 @@ func (m *PackageManager) Download(ctx context.Context, version generator.Version
 	return ErrDownloadFailed
 }
 
-func (m *PackageManager) Unpack(ctx context.Context, version generator.Version, destination string) error {
+func (m *PackageManager) Unpack(ctx context.Context, version randomizer.Version, destination string) error {
 	if pkg, err := m.GetPackage(version); err != nil {
 		return err
 	} else {
@@ -153,7 +154,7 @@ func (m *PackageManager) Unpack(ctx context.Context, version generator.Version, 
 
 // Install copies the Generator files from the source directory to the installation directory for the given version
 // and updates the package information in the index.
-func (m *PackageManager) Install(version generator.Version, sourceDir string) error {
+func (m *PackageManager) Install(version randomizer.Version, sourceDir string) error {
 	pkg, err := m.GetPackage(version)
 	if err != nil {
 		return err
@@ -166,14 +167,14 @@ func (m *PackageManager) Install(version generator.Version, sourceDir string) er
 }
 
 // Configure sets up a generator so that it can be used.
-func (m *PackageManager) Configure(version generator.Version) error {
+func (m *PackageManager) Configure(version randomizer.Version) error {
 	pkg, err := m.GetPackage(version)
 	if err != nil {
 		return err
 	}
 	// Older generators may not have the metadata file included, in that case
 	// we will want to generate it for them based on some preset data.
-	metadataFilename := filepath.Join(pkg.installDir, generator.MetadataFilename)
+	metadataFilename := filepath.Join(pkg.installDir, randomizer.MetadataFilename)
 	if _, err := os.Stat(metadataFilename); os.IsNotExist(err) {
 		return CreateMetadataFile(metadataFilename, version)
 	}
@@ -181,7 +182,7 @@ func (m *PackageManager) Configure(version generator.Version) error {
 }
 
 // Purge removes a package from the cache.
-func (m *PackageManager) Purge(ctx context.Context, version generator.Version) error {
+func (m *PackageManager) Purge(ctx context.Context, version randomizer.Version) error {
 	pkg, err := m.GetPackage(version)
 	if err != nil {
 		return err

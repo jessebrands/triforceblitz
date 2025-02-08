@@ -5,25 +5,26 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
-	"github.com/google/go-github/v68/github"
-	"github.com/jessebrands/triforceblitz/internal/generator"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/google/go-github/v68/github"
+	"github.com/jessebrands/triforceblitz/internal/randomizer"
 )
 
 type GitHubSource struct {
 	client   *github.Client
 	cacheDir string
-	index    map[generator.Version]*GitHubPackage
+	index    map[randomizer.Version]*GitHubPackage
 	Owner    string
 	Repo     string
 }
 
 type GitHubPackage struct {
-	Version     generator.Version
+	Version     randomizer.Version
 	PublishedAt time.Time
 	TarballUrl  string
 }
@@ -35,13 +36,13 @@ func NewGitHubSource(client *github.Client, owner, repo string, cacheDir string)
 	return &GitHubSource{
 		client:   client,
 		cacheDir: cacheDir,
-		index:    make(map[generator.Version]*GitHubPackage),
+		index:    make(map[randomizer.Version]*GitHubPackage),
 		Owner:    owner,
 		Repo:     repo,
 	}
 }
 
-func (s *GitHubSource) getPackageTarball(version generator.Version) string {
+func (s *GitHubSource) getPackageTarball(version randomizer.Version) string {
 	return filepath.Join(s.cacheDir, version.String()+".tar.gz")
 }
 
@@ -53,7 +54,7 @@ func (s *GitHubSource) Update(ctx context.Context) error {
 			return err
 		}
 		for _, r := range releases {
-			version, err := generator.VersionFromString(r.GetTagName())
+			version, err := randomizer.VersionFromString(r.GetTagName())
 			if err != nil {
 				// Tag has an invalid Triforce Blitz version, so this is not a TFB release.
 				// Just skip it, this is not an error.
@@ -86,14 +87,14 @@ func (s *GitHubSource) GetAllPackages() []Package {
 	return packages
 }
 
-func (s *GitHubSource) GetPackage(version generator.Version) (Package, error) {
+func (s *GitHubSource) GetPackage(version randomizer.Version) (Package, error) {
 	if pkg, ok := s.index[version]; ok {
 		return pkg, nil
 	}
 	return nil, ErrPackageNotFound
 }
 
-func (s *GitHubSource) DownloadPackage(ctx context.Context, version generator.Version) error {
+func (s *GitHubSource) DownloadPackage(ctx context.Context, version randomizer.Version) error {
 	if s.IsCached(version) {
 		return nil
 	}
@@ -109,7 +110,7 @@ func (s *GitHubSource) DownloadPackage(ctx context.Context, version generator.Ve
 	return pkg.Download(ctx, filename)
 }
 
-func (s *GitHubSource) UnpackPackage(ctx context.Context, version generator.Version, destination string) error {
+func (s *GitHubSource) UnpackPackage(ctx context.Context, version randomizer.Version, destination string) error {
 	if !s.IsCached(version) {
 		if err := s.DownloadPackage(ctx, version); err != nil {
 			return err
@@ -167,7 +168,7 @@ func (s *GitHubSource) UnpackPackage(ctx context.Context, version generator.Vers
 	return nil
 }
 
-func (s *GitHubSource) PurgePackage(ctx context.Context, version generator.Version) error {
+func (s *GitHubSource) PurgePackage(ctx context.Context, version randomizer.Version) error {
 	name := s.getPackageTarball(version)
 	if _, err := os.Stat(name); err == nil {
 		return os.Remove(s.getPackageTarball(version))
@@ -178,7 +179,7 @@ func (s *GitHubSource) PurgePackage(ctx context.Context, version generator.Versi
 	}
 }
 
-func (s *GitHubSource) IsCached(version generator.Version) bool {
+func (s *GitHubSource) IsCached(version randomizer.Version) bool {
 	if _, err := os.Stat(s.getPackageTarball(version)); err == nil {
 		return true
 	}
@@ -215,7 +216,7 @@ func (p *GitHubPackage) Download(ctx context.Context, destination string) error 
 	return err
 }
 
-func (p *GitHubPackage) GetVersion() generator.Version {
+func (p *GitHubPackage) GetVersion() randomizer.Version {
 	return p.Version
 }
 

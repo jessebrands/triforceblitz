@@ -1,10 +1,11 @@
-package generator_test
+package randomizer_test
 
 import (
 	"bytes"
 	"errors"
-	"github.com/jessebrands/triforceblitz/internal/generator"
 	"testing"
+
+	"github.com/jessebrands/triforceblitz/internal/randomizer"
 )
 
 const validMetadata = `
@@ -28,7 +29,7 @@ const validMetadata = `
 
 func TestUnmarshalMetadata(t *testing.T) {
 	b := bytes.NewBufferString(validMetadata)
-	metadata, err := generator.UnmarshalMetadata(b)
+	metadata, err := randomizer.UnmarshalMetadata(b)
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
 	}
@@ -42,9 +43,9 @@ func TestUnmarshalMetadata(t *testing.T) {
 
 func TestMetadata_Validate(t *testing.T) {
 	t.Run("must validate successfully", func(t *testing.T) {
-		metadata := generator.Metadata{
+		metadata := randomizer.Metadata{
 			Version: "4.2.0-blitz-6.9",
-			Presets: []generator.Preset{
+			Presets: []randomizer.Preset{
 				{Id: "default", Preset: "Triforce Blitz"},
 				{Id: "triforce-blitz", Preset: "Triforce Blitz", Ordinal: 100},
 			},
@@ -57,9 +58,9 @@ func TestMetadata_Validate(t *testing.T) {
 	})
 
 	t.Run("must error on invalid version", func(t *testing.T) {
-		metadata := generator.Metadata{
+		metadata := randomizer.Metadata{
 			Version: "1.3-invalid-1",
-			Presets: []generator.Preset{
+			Presets: []randomizer.Preset{
 				{Id: "default", Preset: "Triforce Blitz"},
 			},
 		}
@@ -68,15 +69,15 @@ func TestMetadata_Validate(t *testing.T) {
 		if err == nil {
 			t.Errorf("expected non-nil error")
 		}
-		if !errors.Is(err, generator.ErrInvalidVersion) {
+		if !errors.Is(err, randomizer.ErrInvalidVersion) {
 			t.Errorf("expected ErrInvalidVersion error, got %v", err)
 		}
 	})
 
 	t.Run("must error on missing default preset", func(t *testing.T) {
-		metadata := generator.Metadata{
+		metadata := randomizer.Metadata{
 			Version: "1.0.0-blitz-1.0",
-			Presets: []generator.Preset{
+			Presets: []randomizer.Preset{
 				{Id: "triforce-blitz", Preset: "Triforce Blitz"},
 			},
 		}
@@ -85,22 +86,22 @@ func TestMetadata_Validate(t *testing.T) {
 		if err == nil {
 			t.Errorf("expected non-nil error")
 		}
-		if !errors.Is(err, generator.ErrNoDefaultPreset) {
+		if !errors.Is(err, randomizer.ErrNoDefaultPreset) {
 			t.Errorf("expected ErrNoDefaultPreset error, got %v", err)
 		}
 	})
 
 	t.Run("must error when presets is empty", func(t *testing.T) {
-		metadata := generator.Metadata{
+		metadata := randomizer.Metadata{
 			Version: "1.0.0-blitz-1.0",
-			Presets: []generator.Preset{},
+			Presets: []randomizer.Preset{},
 		}
 
 		err := metadata.Validate()
 		if err == nil {
 			t.Errorf("expected non-nil error")
 		}
-		if !errors.Is(err, generator.ErrNoPresets) {
+		if !errors.Is(err, randomizer.ErrNoPresets) {
 			t.Errorf("expected ErrNoPresets error, got %v", err)
 		}
 	})
