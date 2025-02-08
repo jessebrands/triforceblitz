@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -17,19 +18,33 @@ var (
 type GenerateSeedOpts struct {
 	Seed    string
 	Version randomizer.Version
+	RomFile string
+	OutDir  string
 }
 
 func ParseGenerateSeedOpts(args []string) (GenerateSeedOpts, error) {
 	opts := GenerateSeedOpts{}
 	flags := flag.NewFlagSet("generate", flag.ExitOnError)
+	flags.StringVar(&opts.RomFile, "R", "", "ROM file to use")
+	flags.StringVar(&opts.OutDir, "o", "", "directory to store the result in")
 	flags.StringVar(&opts.Seed, "s", "", "random number generator seed passed to the randomizer")
 	flags.Var(&opts.Version, "r", "randomizer version to use")
 	flags.Parse(args)
+	if opts.RomFile == "" {
+		return opts, errors.New("no ROM file specified")
+	}
 	if opts.Seed == "" {
 		if seed, err := seed.GenerateSeedString(32); err != nil {
 			return opts, err
 		} else {
 			opts.Seed = seed
+		}
+	}
+	if opts.OutDir == "" {
+		if dir, err := os.Getwd(); err != nil {
+			return opts, err
+		} else {
+			opts.OutDir = dir
 		}
 	}
 	return opts, nil
@@ -42,7 +57,8 @@ func generateSeed(args []string) {
 		os.Exit(1)
 	}
 	// Check if the actual randomizer even exists.
-	if _, err := svc.GetRandomizer(opts.Version); err != nil {
+	rnd, err := svc.GetRandomizer(opts.Version)
+	if err != nil {
 		fmt.Printf("Could not use randomizer %s: %s.\n", opts.Version.String(), err.Error())
 		os.Exit(1)
 	}
@@ -54,7 +70,17 @@ func generateSeed(args []string) {
 	}
 	fmt.Printf("Found Python interpreter: %s\n", interpreter.Path())
 	// Generate the seed.
-	fmt.Printf("Generating seed %s with randomizer %s", opts.Seed, opts.Version.String())
+	randomizerOpts := randomizer.GenerateOpts{
+		OutputDir: opts.OutDir,
+		Seed:      opts.Seed,
+		RomFile:   opts.RomFile,
+		Preset:    "Triforce Blitz",
+	}
+	fmt.Printf("Generating seed %s with randomizer %s\n", opts.Seed, opts.Version.String())
+	if err := rnd.Generate(interpreter, randomizerOpts); err != nil {
+		fmt.Printf("Failed to generate seed: %s\n", err.Error())
+		os.Exit(1)
+	}
 }
 
 func main() {

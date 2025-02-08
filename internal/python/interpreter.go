@@ -11,6 +11,7 @@ import (
 
 type Interpreter interface {
 	Version() (string, error)
+	Command(args ...string) *exec.Cmd
 }
 
 // LocalInterpreter is a Python interpreter on the local filesystem.
