@@ -2,8 +2,8 @@ package randomizer
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/jessebrands/triforceblitz/internal/python"
@@ -89,12 +89,12 @@ func defaultSettings(randomizerSeed string, outDir string, romFile string) gener
 	}
 }
 
-func (g *Generator) Generate(interpreter python.Interpreter, opts GenerateSeedOpts) error {
+func (g *Generator) Generate(interpreter python.Interpreter, opts GenerateSeedOpts) (*exec.Cmd, error) {
 	// Create the settings file first.
 	settings := defaultSettings(opts.Seed, opts.OutputDir, opts.RomFile)
 	settingsFile := filepath.Join(settings.OutputDir, SettingsFilename)
 	if err := createSettingsFile(settings, settingsFile); err != nil {
-		return err
+		return nil, err
 	}
 	// Call the generator, plain and simple!
 	cmd := interpreter.Command(
@@ -102,12 +102,7 @@ func (g *Generator) Generate(interpreter python.Interpreter, opts GenerateSeedOp
 		"--settings_preset", opts.Preset,
 		"--settings", settingsFile,
 	)
-	out, err := cmd.CombinedOutput()
-	fmt.Print(string(out))
-	if err != nil {
-		return err
-	}
-	return nil
+	return cmd, nil
 }
 
 func (g *Generator) Entrypoint() string {

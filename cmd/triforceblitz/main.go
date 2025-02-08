@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/jessebrands/triforceblitz/internal/python"
 	"github.com/jessebrands/triforceblitz/internal/randomizer"
@@ -28,7 +31,9 @@ func ParseGenerateSeedOpts(args []string) (GenerateSeedOpts, error) {
 	flags.StringVar(&opts.OutDir, "o", "", "directory to store the result in")
 	flags.StringVar(&opts.Seed, "s", "", "random number generator seed passed to the generator")
 	flags.Var(&opts.Version, "r", "generator version to use")
-	flags.Parse(args)
+	if err := flags.Parse(args); err != nil {
+		return opts, err
+	}
 	if opts.RomFile == "" {
 		return opts, errors.New("no ROM file specified")
 	}
@@ -76,10 +81,36 @@ func generateSeed(args []string) {
 		Preset:    "Triforce Blitz",
 	}
 	fmt.Printf("Generating seed %s with generator %s\n", opts.Seed, opts.Version.String())
-	if err := generator.Generate(interpreter, generatorOpts); err != nil {
-		fmt.Printf("Failed to generate seed: %s\n", err.Error())
+	start := time.Now()
+	cmd, err := generator.Generate(interpreter, generatorOpts)
+	if err != nil {
+		fmt.Printf("Failed to invoke generator: %s\n", err.Error())
 		os.Exit(1)
 	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		fmt.Printf("Failed to get stderr from generator: %s\n", err.Error())
+		os.Exit(1)
+	}
+	defer stderr.Close()
+	scanner := bufio.NewScanner(stderr)
+	// At this point, we need to figure out a way to grab the output...
+	go func() {
+		for scanner.Scan() {
+			line := strings.TrimRight(scanner.Text(), " \t\r\n")
+			fmt.Printf("==> %s\n", line)
+		}
+	}()
+	if err := cmd.Start(); err != nil {
+		fmt.Printf("Generator process error: %s\n", err.Error())
+		os.Exit(1)
+	}
+	if err := cmd.Wait(); err != nil {
+		fmt.Printf("Wait(): %s\n", err.Error())
+		os.Exit(1)
+	}
+	elapsed := time.Since(start)
+	fmt.Printf("Seed generation finished in %s\n", elapsed)
 }
 
 func main() {
