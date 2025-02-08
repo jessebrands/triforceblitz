@@ -152,7 +152,7 @@ func (m *PackageManager) Unpack(ctx context.Context, version randomizer.Version,
 	}
 }
 
-// Install copies the randomizer files from the source directory to the installation directory for the given version
+// Install copies the generator files from the source directory to the installation directory for the given version
 // and updates the package information in the index.
 func (m *PackageManager) Install(version randomizer.Version, sourceDir string) error {
 	pkg, err := m.GetPackage(version)
@@ -166,13 +166,13 @@ func (m *PackageManager) Install(version randomizer.Version, sourceDir string) e
 	return os.CopyFS(pkg.installDir, os.DirFS(filepath.Dir(entrypoint)))
 }
 
-// Configure sets up a randomizer so that it can be used.
+// Configure sets up a generator so that it can be used.
 func (m *PackageManager) Configure(version randomizer.Version) error {
 	pkg, err := m.GetPackage(version)
 	if err != nil {
 		return err
 	}
-	// Older randomizers may not have the metadata file included, in that case
+	// Older generators may not have the metadata file included, in that case
 	// we will want to generate it for them based on some preset data.
 	metadataFilename := filepath.Join(pkg.installDir, randomizer.MetadataFilename)
 	if _, err := os.Stat(metadataFilename); os.IsNotExist(err) {

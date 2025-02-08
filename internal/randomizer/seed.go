@@ -8,7 +8,7 @@ import (
 // GenerateSeedString generates a random string of a given length
 // by reading from a cryptographically secure source of randomness.
 //
-// The generated string can be used to seed the Ocarina of time randomizer.
+// The generated string can be used to seed the Ocarina of time Randomizer.
 func GenerateSeedString(n int) (string, error) {
 	const (
 		letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

@@ -7,13 +7,13 @@ import (
 	"path/filepath"
 )
 
-// Service provides methods to locate and load Randomizers.
+// Service provides methods to locate and load generators.
 type Service struct {
-	// Path where Randomizers are installed.
+	// Path where generators are installed.
 	path string
 
-	// Cached randomizers.
-	randomizers []*Randomizer
+	// Cached generators.
+	generators []*Generator
 }
 
 func NewService(path string) *Service {
@@ -21,7 +21,7 @@ func NewService(path string) *Service {
 }
 
 func (s *Service) Synchronize() error {
-	s.randomizers = []*Randomizer{}
+	s.generators = []*Generator{}
 	return filepath.WalkDir(s.path, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -31,20 +31,20 @@ func (s *Service) Synchronize() error {
 		}
 		metadata, err := OpenMetadata(path)
 		if err != nil {
-			slog.Warn("Could not load randomizer metadata, skipping.",
+			slog.Warn("Could not load generator metadata, skipping.",
 				"filename", path,
 				"error", err)
 			return filepath.SkipDir
 		}
 		version, err := VersionFromString(metadata.Version)
 		if err != nil {
-			slog.Warn("Could not parse randomizer version from metadata, skipping.",
+			slog.Warn("Could not parse generator version from metadata, skipping.",
 				"version", metadata.Version,
 				"filename", path,
 				"error", err)
 			return filepath.SkipDir
 		}
-		s.randomizers = append(s.randomizers, &Randomizer{
+		s.generators = append(s.generators, &Generator{
 			Version: version,
 			Path:    filepath.Dir(path),
 			Presets: metadata.Presets,
@@ -53,18 +53,18 @@ func (s *Service) Synchronize() error {
 	})
 }
 
-// GetRandomizers returns a list of all available randomizers.
-func (s *Service) GetRandomizers() []*Randomizer {
-	return s.randomizers
+// GetGenerators returns a list of all available generators.
+func (s *Service) GetGenerators() []*Generator {
+	return s.generators
 }
 
-// GetRandomizer seeks a specific version or returns an error if it cannot
-// be found.
-func (s *Service) GetRandomizer(version Version) (*Randomizer, error) {
-	for _, r := range s.randomizers {
+// GetGenerator seeks a specific generator by version or returns an
+// error if it cannot be found.
+func (s *Service) GetGenerator(version Version) (*Generator, error) {
+	for _, r := range s.generators {
 		if version.Equal(r.Version) {
 			return r, nil
 		}
 	}
-	return nil, errors.New("randomizer not found")
+	return nil, errors.New("generator not found")
 }

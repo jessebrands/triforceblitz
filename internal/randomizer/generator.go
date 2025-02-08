@@ -15,7 +15,7 @@ const (
 	DefaultPreset      = "default"
 )
 
-type Randomizer struct {
+type Generator struct {
 	Version Version
 	Path    string
 	Presets []Preset
@@ -27,18 +27,18 @@ type Preset struct {
 	Ordinal int    `json:"ordinal,omitempty"`
 }
 
-type GenerateOpts struct {
+type GenerateSeedOpts struct {
 	Seed      string
 	Preset    string
 	OutputDir string
 	RomFile   string
 }
 
-type randomizerSettings struct {
+type generatorSettings struct {
 	// String used to seed the randomizer.
 	Seed string `json:"seed"`
 
-	// Where to store the gnenerated files.
+	// Where to store generated files.
 	OutputDir string `json:"output_dir"`
 
 	// Filename of outputted files.
@@ -60,7 +60,7 @@ type randomizerSettings struct {
 	CompressRom string `json:"compress_rom"`
 }
 
-func createSettingsFile(settings randomizerSettings, name string) error {
+func createSettingsFile(settings generatorSettings, name string) error {
 	f, err := os.Create(name)
 	if err != nil {
 		return err
@@ -76,8 +76,8 @@ func createSettingsFile(settings randomizerSettings, name string) error {
 	return nil
 }
 
-func defaultSettings(randomizerSeed string, outDir string, romFile string) randomizerSettings {
-	return randomizerSettings{
+func defaultSettings(randomizerSeed string, outDir string, romFile string) generatorSettings {
+	return generatorSettings{
 		Seed:                randomizerSeed,
 		OutputDir:           outDir,
 		RomFile:             romFile,
@@ -89,7 +89,7 @@ func defaultSettings(randomizerSeed string, outDir string, romFile string) rando
 	}
 }
 
-func (g *Randomizer) Generate(interpreter python.Interpreter, opts GenerateOpts) error {
+func (g *Generator) Generate(interpreter python.Interpreter, opts GenerateSeedOpts) error {
 	// Create the settings file first.
 	settings := defaultSettings(opts.Seed, opts.OutputDir, opts.RomFile)
 	settingsFile := filepath.Join(settings.OutputDir, SettingsFilename)
@@ -110,11 +110,11 @@ func (g *Randomizer) Generate(interpreter python.Interpreter, opts GenerateOpts)
 	return nil
 }
 
-func (g *Randomizer) Entrypoint() string {
+func (g *Generator) Entrypoint() string {
 	return filepath.Join(g.Path, EntrypointFilename)
 }
 
-func (g *Randomizer) String() string {
+func (g *Generator) String() string {
 	return g.Version.String()
 }
 

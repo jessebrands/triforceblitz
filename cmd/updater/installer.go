@@ -17,7 +17,7 @@ func (w *Whitelist) Includes(s string) bool {
 }
 
 // Installer provides a convenient interface over PackageManager for
-// installing randomizer packages.
+// installing generator packages.
 type Installer struct {
 	manager       *PackageManager
 	CachePackages bool
@@ -64,7 +64,7 @@ func (i *Installer) collect(versions []randomizer.Version) ([]randomizer.Version
 		if pkg, err := i.manager.GetPackage(v); err != nil {
 			return []randomizer.Version{}, err
 		} else if pkg.IsInstalled() {
-			fmt.Printf("Randomizer %s is already installed\n", v.String())
+			fmt.Printf("Generator %s is already installed\n", v.String())
 			continue
 		}
 		candidates = append(candidates, v)
@@ -84,7 +84,7 @@ func (i *Installer) collectAll(whitelist Whitelist) ([]randomizer.Version, error
 }
 
 func (i *Installer) install(ctx context.Context, version randomizer.Version) error {
-	fmt.Printf("Selecting randomizer %s\n", version.String())
+	fmt.Printf("Selecting generator %s\n", version.String())
 	if !i.manager.IsCached(version) {
 		fmt.Printf("Downloading package %s\n", version.String())
 		err := i.manager.Download(ctx, version)
@@ -111,15 +111,15 @@ func (i *Installer) install(ctx context.Context, version randomizer.Version) err
 			fmt.Printf("Error removing package %s from cache: %s\n", version.String(), err.Error())
 		}
 	}
-	fmt.Printf("Installing randomizer %s\n", version.String())
+	fmt.Printf("Installing generator %s\n", version.String())
 	if err := i.manager.Install(version, tempDir); err != nil {
 		return err
 	}
-	fmt.Printf("Configuring randomizer %s\n", version.String())
+	fmt.Printf("Configuring generator %s\n", version.String())
 	if err := i.manager.Configure(version); err != nil {
 		return err
 	}
-	fmt.Printf("Installed randomizer %s\n", version.String())
+	fmt.Printf("Installed generator %s\n", version.String())
 	return nil
 }
 
@@ -131,7 +131,7 @@ func (i *Installer) parallelInstall(ctx context.Context, versions []randomizer.V
 		go func() {
 			defer wg.Done()
 			if err := i.install(ctx, v); err != nil {
-				fmt.Printf("Failed to install randomizer %s: %s\n", v.String(), err.Error())
+				fmt.Printf("Failed to install generator %s: %s\n", v.String(), err.Error())
 			}
 		}()
 	}

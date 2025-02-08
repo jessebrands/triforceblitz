@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	svc = randomizer.NewService(os.Getenv("TRIFORCEBLITZ_RANDOMIZERS_DIR"))
+	svc = randomizer.NewService(os.Getenv("TRIFORCEBLITZ_GENERATORS_DIR"))
 )
 
 type GenerateSeedOpts struct {
@@ -26,8 +26,8 @@ func ParseGenerateSeedOpts(args []string) (GenerateSeedOpts, error) {
 	flags := flag.NewFlagSet("generate", flag.ExitOnError)
 	flags.StringVar(&opts.RomFile, "R", "", "ROM file to use")
 	flags.StringVar(&opts.OutDir, "o", "", "directory to store the result in")
-	flags.StringVar(&opts.Seed, "s", "", "random number generator seed passed to the randomizer")
-	flags.Var(&opts.Version, "r", "randomizer version to use")
+	flags.StringVar(&opts.Seed, "s", "", "random number generator seed passed to the generator")
+	flags.Var(&opts.Version, "r", "generator version to use")
 	flags.Parse(args)
 	if opts.RomFile == "" {
 		return opts, errors.New("no ROM file specified")
@@ -55,10 +55,10 @@ func generateSeed(args []string) {
 		fmt.Printf("Could not generate seed: %s\n", err.Error())
 		os.Exit(1)
 	}
-	// Check if the actual randomizer even exists.
-	rnd, err := svc.GetRandomizer(opts.Version)
+	// Check if the actual generator even exists.
+	generator, err := svc.GetGenerator(opts.Version)
 	if err != nil {
-		fmt.Printf("Could not use randomizer %s: %s.\n", opts.Version.String(), err.Error())
+		fmt.Printf("Could not use generator %s: %s.\n", opts.Version.String(), err.Error())
 		os.Exit(1)
 	}
 	// Find a Python interpreter.
@@ -69,14 +69,14 @@ func generateSeed(args []string) {
 	}
 	fmt.Printf("Found Python interpreter: %s\n", interpreter.Path())
 	// Generate the seed.
-	randomizerOpts := randomizer.GenerateOpts{
+	generatorOpts := randomizer.GenerateSeedOpts{
 		OutputDir: opts.OutDir,
 		Seed:      opts.Seed,
 		RomFile:   opts.RomFile,
 		Preset:    "Triforce Blitz",
 	}
-	fmt.Printf("Generating seed %s with randomizer %s\n", opts.Seed, opts.Version.String())
-	if err := rnd.Generate(interpreter, randomizerOpts); err != nil {
+	fmt.Printf("Generating seed %s with generator %s\n", opts.Seed, opts.Version.String())
+	if err := generator.Generate(interpreter, generatorOpts); err != nil {
 		fmt.Printf("Failed to generate seed: %s\n", err.Error())
 		os.Exit(1)
 	}
