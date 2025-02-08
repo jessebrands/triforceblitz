@@ -1,6 +1,4 @@
-// Package seed implements functionality for working with Ocarina of Time
-// Randomizer seeds.
-package seed
+package randomizer
 
 import (
 	"crypto/rand"

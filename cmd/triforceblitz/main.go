@@ -8,7 +8,6 @@ import (
 
 	"github.com/jessebrands/triforceblitz/internal/python"
 	"github.com/jessebrands/triforceblitz/internal/randomizer"
-	"github.com/jessebrands/triforceblitz/internal/seed"
 )
 
 var (
@@ -34,7 +33,7 @@ func ParseGenerateSeedOpts(args []string) (GenerateSeedOpts, error) {
 		return opts, errors.New("no ROM file specified")
 	}
 	if opts.Seed == "" {
-		if seed, err := seed.GenerateSeedString(32); err != nil {
+		if seed, err := randomizer.GenerateSeedString(32); err != nil {
 			return opts, err
 		} else {
 			opts.Seed = seed
