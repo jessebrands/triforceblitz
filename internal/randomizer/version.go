@@ -66,3 +66,12 @@ func (v *Version) Set(s string) error {
 	*v = version
 	return nil
 }
+
+func (v *Version) Equal(o Version) bool {
+	return (v.Major == o.Major &&
+		v.Minor == o.Minor &&
+		v.Patch == o.Patch &&
+		v.Branch == o.Branch &&
+		v.BranchMajor == o.BranchMajor &&
+		v.BranchMinor == o.BranchMinor)
+}
