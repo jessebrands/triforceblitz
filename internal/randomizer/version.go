@@ -57,3 +57,12 @@ func (v *Version) String() string {
 		v.BranchMinor,
 	)
 }
+
+func (v *Version) Set(s string) error {
+	version, err := VersionFromString(s)
+	if err != nil {
+		return err
+	}
+	*v = version
+	return nil
+}
