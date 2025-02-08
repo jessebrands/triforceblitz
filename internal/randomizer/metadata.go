@@ -6,7 +6,11 @@ import (
 	"os"
 )
 
-// Metadata describes the metadata of a Generator.
+const (
+	MetadataFilename = ".randomizer-metadata.json"
+)
+
+// Metadata describes the metadata of a Randomizer.
 type Metadata struct {
 	Version    string   `json:"version"`
 	Prerelease bool     `json:"prerelease,omitempty"`

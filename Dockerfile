@@ -35,9 +35,9 @@ RUN go build -o /usr/local/bin/triforceblitz-updater ./cmd/updater
 # installing libraries and programs that need to be present, as well as
 # setting up a non-privileged user and permissions.
 #
-# Furthermore, it runs triforceblitz-updater to install generators.
+# Furthermore, it runs triforceblitz-updater to install randomizers.
 FROM debian:bookworm-slim AS environment
-ENV TRIFORCEBLITZ_GENERATORS_DIR=/usr/local/share/triforceblitz/generators
+ENV TRIFORCEBLITZ_RANDOMIZERS_DIR=/usr/local/share/triforceblitz/randomizers
 ENV TRIFORCEBLITZ_PACKAGE_CACHE_DIR=/var/cache/triforceblitz/packages
 RUN apt-get update -y && apt-get install -y \
     ca-certificates \
@@ -45,7 +45,7 @@ RUN apt-get update -y && apt-get install -y \
 
 COPY --from=updater-build /usr/local/bin/triforceblitz-updater /usr/local/bin/
 
-RUN mkdir -p /usr/local/share/triforceblitz/generators \
+RUN mkdir -p /usr/local/share/triforceblitz/randomizers \
     && mkdir -p /var/cache/triforceblitz/packages
 
 RUN useradd --system --shell /bin/bash triforceblitz
@@ -59,7 +59,7 @@ RUN triforceblitz-updater install -no-cache -b blitz
 # Release stage. This is the actual image. We copy over the built server
 # binary and run it.
 FROM environment AS release
-ENV TRIFORCEBLITZ_GENERATORS_DIR=/usr/local/share/triforceblitz/generators
+ENV TRIFORCEBLITZ_RANDOMIZERS_DIR=/usr/local/share/triforceblitz/randomizers
 ENV TRIFORCEBLITZ_PACKAGE_CACHE_DIR=/var/cache/triforceblitz/packages
 
 COPY --from=server-build /usr/local/bin/triforceblitz-server /usr/local/bin/

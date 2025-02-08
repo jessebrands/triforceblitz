@@ -1,12 +1,11 @@
 package randomizer
 
 const (
-	MetadataFilename   = ".generator-metadata.json"
 	EntrypointFilename = "OoTRandomizer.py"
 	DefaultPreset      = "default"
 )
 
-type Generator struct {
+type Randomizer struct {
 	Version Version
 	Path    string
 	Presets []Preset
@@ -18,7 +17,7 @@ type Preset struct {
 	Ordinal int    `json:"ordinal,omitempty"`
 }
 
-func (g *Generator) String() string {
+func (g *Randomizer) String() string {
 	return g.Version.String()
 }
 

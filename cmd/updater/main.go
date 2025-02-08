@@ -16,10 +16,10 @@ import (
 
 var (
 	cacheDir = os.Getenv("TRIFORCEBLITZ_PACKAGE_CACHE_DIR")
-	manager  = NewPackageManager(os.Getenv("TRIFORCEBLITZ_GENERATORS_DIR"))
+	manager  = NewPackageManager(os.Getenv("TRIFORCEBLITZ_RANDOMIZERS_DIR"))
 )
 
-// listPackages lists all generator packages available.
+// listPackages lists all randomizer packages available.
 func listPackages() {
 	packages := manager.AvailablePackages()
 
