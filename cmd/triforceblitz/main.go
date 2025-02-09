@@ -19,6 +19,7 @@ var (
 
 type GenerateSeedOpts struct {
 	Seed    string
+	Preset  string
 	Version randomizer.Version
 	RomFile string
 	OutDir  string
@@ -27,10 +28,11 @@ type GenerateSeedOpts struct {
 func ParseGenerateSeedOpts(args []string) (GenerateSeedOpts, error) {
 	opts := GenerateSeedOpts{}
 	flags := flag.NewFlagSet("generate", flag.ExitOnError)
+	flags.StringVar(&opts.Seed, "s", "", "random number generator seed passed to the generator")
+	flags.StringVar(&opts.Preset, "p", "default", "settings preset to use")
+	flags.Var(&opts.Version, "r", "generator version to use")
 	flags.StringVar(&opts.RomFile, "R", "", "ROM file to use")
 	flags.StringVar(&opts.OutDir, "o", "", "directory to store the result in")
-	flags.StringVar(&opts.Seed, "s", "", "random number generator seed passed to the generator")
-	flags.Var(&opts.Version, "r", "generator version to use")
 	if err := flags.Parse(args); err != nil {
 		return opts, err
 	}
@@ -54,6 +56,25 @@ func ParseGenerateSeedOpts(args []string) (GenerateSeedOpts, error) {
 	return opts, nil
 }
 
+func selectPreset(generator *randomizer.Generator, preset string) (string, error) {
+	// Empty string means we should just grab the default preset.
+	if preset == "" {
+		if p, err := generator.Presets.Default(); err == nil {
+			return p.Value, nil
+		} else {
+			return "", err
+		}
+	}
+	// A preset was specified, this might be a 'symbolic' preset.
+	// Look it up in our map and return it if we find it.
+	if p, ok := generator.Presets[preset]; ok {
+		return p.Value, nil
+	}
+	// The preset was not found symbolically but was set.
+	// This might be a preset literal, so we will just return it as-is.
+	return preset, nil
+}
+
 func generateSeed(args []string) {
 	opts, err := ParseGenerateSeedOpts(args)
 	if err != nil {
@@ -73,14 +94,23 @@ func generateSeed(args []string) {
 		os.Exit(1)
 	}
 	fmt.Printf("Found Python interpreter: %s\n", interpreter.Path())
+	// Select the preset.
+	preset, err := selectPreset(generator, opts.Preset)
+	if err != nil {
+		fmt.Printf("Could not select preset: %s\n", err.Error())
+		os.Exit(1)
+	}
 	// Generate the seed.
 	generatorOpts := randomizer.GenerateSeedOpts{
 		OutputDir: opts.OutDir,
 		Seed:      opts.Seed,
 		RomFile:   opts.RomFile,
-		Preset:    "Triforce Blitz",
+		Preset:    preset,
 	}
-	fmt.Printf("Generating seed %s with generator %s\n", opts.Seed, opts.Version.String())
+	fmt.Printf("Generating seed %s with generator %s using settings preset %s\n",
+		opts.Seed,
+		opts.Version.String(),
+		preset)
 	start := time.Now()
 	cmd, err := generator.Generate(interpreter, generatorOpts)
 	if err != nil {
@@ -102,11 +132,11 @@ func generateSeed(args []string) {
 		}
 	}()
 	if err := cmd.Start(); err != nil {
-		fmt.Printf("Generator process error: %s\n", err.Error())
+		fmt.Printf("Failed to start randomizer: %s\n", err.Error())
 		os.Exit(1)
 	}
 	if err := cmd.Wait(); err != nil {
-		fmt.Printf("Wait(): %s\n", err.Error())
+		fmt.Printf("Failed to generate seed because of randomizer error: %s\n", err.Error())
 		os.Exit(1)
 	}
 	elapsed := time.Since(start)

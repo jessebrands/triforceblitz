@@ -10,11 +10,11 @@ const (
 	MetadataFilename = ".generator-metadata.json"
 )
 
-// Metadata describes the metadata of a Generator.
+// Metadata describes details about a Generator.
 type Metadata struct {
-	Version    string   `json:"version"`
-	Prerelease bool     `json:"prerelease,omitempty"`
-	Presets    []Preset `json:"presets"`
+	Version    string    `json:"version"`
+	Prerelease bool      `json:"prerelease,omitempty"`
+	Presets    PresetMap `json:"presets"`
 }
 
 // Validate validates the contents of the Metadata.
@@ -34,12 +34,10 @@ func (m *Metadata) Validate() error {
 	if len(m.Presets) == 0 {
 		return ErrNoPresets
 	}
-	for _, p := range m.Presets {
-		if p.Id == DefaultPreset {
-			return nil
-		}
+	if _, err := m.Presets.Default(); err != nil {
+		return err
 	}
-	return ErrNoDefaultPreset
+	return nil
 }
 
 // UnmarshalMetadata takes an io.Reader containing a Metadata file and parses it.

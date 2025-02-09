@@ -13,40 +13,40 @@ var (
 	// blitz-0.1 - blitz-0.19
 	metadataPrerelease = randomizer.Metadata{
 		Prerelease: true,
-		Presets: []randomizer.Preset{
-			{Id: randomizer.DefaultPreset, Preset: "Triforce Blitz"},
+		Presets: randomizer.PresetMap{
+			randomizer.DefaultPreset: {Value: "Triforce Blitz"},
 		},
 	}
 	// blitz-0.20 - blitz-0.37
 	metadataSeason1 = randomizer.Metadata{
 		Prerelease: false,
-		Presets: []randomizer.Preset{
-			{Id: randomizer.DefaultPreset, Preset: "Triforce Blitz"},
-			{Id: "triforce-blitz-s1", Preset: "Triforce Blitz", Ordinal: 100},
+		Presets: randomizer.PresetMap{
+			randomizer.DefaultPreset: {Value: "Triforce Blitz"},
+			"triforce-blitz-s1":      {Value: "Triforce Blitz", Ordinal: 100},
 		},
 	}
 	// blitz-0.40 - blitz-0.42
 	metadataSeason2 = randomizer.Metadata{
 		Prerelease: false,
-		Presets: []randomizer.Preset{
-			{Id: randomizer.DefaultPreset, Preset: "Triforce Blitz S2"},
-			{Id: "triforce-blitz-s2", Preset: "Triforce Blitz S2", Ordinal: 200},
+		Presets: randomizer.PresetMap{
+			randomizer.DefaultPreset: {Value: "Triforce Blitz S2"},
+			"triforce-blitz-s2":      {Value: "Triforce Blitz S2", Ordinal: 200},
 		},
 	}
 	// blitz-0.43
 	metadataSeason2Post = randomizer.Metadata{
 		Prerelease: false,
-		Presets: []randomizer.Preset{
-			{Id: randomizer.DefaultPreset, Preset: "Triforce Blitz S2"},
-			{Id: "triforce-blitz-s2-jabus-revenge", Preset: "Triforce Blitz S2", Ordinal: 201},
+		Presets: randomizer.PresetMap{
+			randomizer.DefaultPreset:          {Value: "Triforce Blitz S2"},
+			"triforce-blitz-s2-jabus-revenge": {Value: "Triforce Blitz S2", Ordinal: 201},
 		},
 	}
 	// blitz-0.50 - blitz-0.59
 	metadataSeason3 = randomizer.Metadata{
 		Prerelease: false,
-		Presets: []randomizer.Preset{
-			{Id: randomizer.DefaultPreset, Preset: "Triforce Blitz S3"},
-			{Id: "triforce-blitz-s3", Preset: "Triforce Blitz S3", Ordinal: 300},
+		Presets: randomizer.PresetMap{
+			randomizer.DefaultPreset: {Value: "Triforce Blitz S3"},
+			"triforce-blitz-s3":      {Value: "Triforce Blitz S3", Ordinal: 300},
 		},
 	}
 )
