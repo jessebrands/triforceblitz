@@ -1,9 +1,8 @@
-package installer
+package pkgman
 
 import (
 	"context"
 	"fmt"
-	"github.com/jessebrands/triforceblitz/internal/pkgman"
 	"os"
 	"slices"
 	"sync"
@@ -20,12 +19,12 @@ func (w *Whitelist) Includes(s string) bool {
 // Installer provides a convenient interface over PackageManager for
 // installing generator packages.
 type Installer struct {
-	manager       *pkgman.PackageManager
+	manager       *PackageManager
 	CachePackages bool
 }
 
-// New creates a new Installer.
-func New(manager *pkgman.PackageManager) *Installer {
+// NewInstaller creates a new Installer.
+func NewInstaller(manager *PackageManager) *Installer {
 	return &Installer{
 		manager:       manager,
 		CachePackages: true,

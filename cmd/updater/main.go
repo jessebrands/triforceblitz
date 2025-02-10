@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"github.com/jessebrands/triforceblitz/internal/config"
 	"github.com/jessebrands/triforceblitz/internal/pkgman"
-	"github.com/jessebrands/triforceblitz/internal/pkgman/installer"
 	"log/slog"
 	"os"
 	"strings"
@@ -49,9 +50,8 @@ func install(args []string) {
 		whitelist = strings.Split(*branches, ",")
 	}
 
-	installer := installer.New(manager)
+	installer := pkgman.NewInstaller(manager)
 	installer.CachePackages = !*noCache
-
 	if len(candidates) > 0 {
 		if _, err := installCandidates(installer, candidates); err != nil {
 			fmt.Printf("Installation failed: %s\n", err.Error())
@@ -63,7 +63,7 @@ func install(args []string) {
 	}
 }
 
-func installCandidates(installer *installer.Installer, candidates []string) ([]randomizer.Version, error) {
+func installCandidates(installer *pkgman.Installer, candidates []string) ([]randomizer.Version, error) {
 	// Turn candidates into versions:
 	var versions []randomizer.Version
 	for _, c := range candidates {
@@ -78,23 +78,34 @@ func installCandidates(installer *installer.Installer, candidates []string) ([]r
 }
 
 func main() {
-	// Initialize the package manager.
-	client := github.NewClient(nil)
-	manager.AddSource(pkgman.NewGitHubSource(client, "OoT-Randomizer", "Elagatua"))
-	if err := manager.Update(context.Background()); err != nil {
-		slog.Error("Could not refresh package index.", "error", err)
-	}
+	// Acquire a lockfile lock first.
+	lockfile := pkgman.NewLockFile(config.GetLockFilename())
+	err := lockfile.Lock(func() {
+		// Initialize the package manager.
+		client := github.NewClient(nil)
+		manager.AddSource(pkgman.NewGitHubSource(client, "OoT-Randomizer", "Elagatua"))
+		if err := manager.Update(context.Background()); err != nil {
+			slog.Error("Could not refresh package index.", "error", err)
+		}
 
-	// Invoke the package manager.
-	command := os.Args[1]
-	switch command {
-	case "list":
-		listPackages()
+		// Invoke the package manager.
+		command := os.Args[1]
+		switch command {
+		case "list":
+			listPackages()
 
-	case "install":
-		install(os.Args[2:])
+		case "install":
+			install(os.Args[2:])
 
-	default:
-		// Print out a useful help guide.
+		default:
+			// Print out a useful help guide.
+		}
+	})
+	if err != nil {
+		if errors.Is(err, pkgman.ErrLockFileLocked) {
+			fmt.Printf("Packages are locked, is another instance running?\n")
+		} else if errors.Is(err, pkgman.ErrLockNotAcquired) {
+			fmt.Printf("Could not acquire lock, do you have the right permissions?\n")
+		}
 	}
 }

@@ -13,6 +13,10 @@ const (
 	// EnvPackageCacheDir is the name of the environment variable that stores
 	// the directory where packages should be stored to.
 	EnvPackageCacheDir = "TRIFORCEBLITZ_PACKAGE_CACHE_DIR"
+
+	// EnvLockFilename is the name of the environment variable that stores the
+	// filename of the lockfile.
+	EnvLockFilename = "TRIFORCEBLITZ_LOCK_FILE"
 )
 
 // GetGeneratorDir returns the directory where generators should be stored.
@@ -38,4 +42,12 @@ func GetPackageCacheDir() string {
 	} else {
 		return "packages"
 	}
+}
+
+func GetLockFilename() string {
+	if path := os.Getenv(EnvLockFilename); path != "" {
+		return path
+	}
+	// If we don't have an environment variable, just use the package dir.
+	return filepath.Join(GetPackageCacheDir(), "triforceblitz.lock")
 }
