@@ -177,7 +177,29 @@ func (m *PackageManager) Configure(version randomizer.Version) error {
 	// we will want to generate it for them based on some preset data.
 	metadataFilename := filepath.Join(pkg.installDir, randomizer.MetadataFilename)
 	if _, err := os.Stat(metadataFilename); os.IsNotExist(err) {
-		return CreateMetadataFile(metadataFilename, version)
+		if err := CreateMetadataFile(metadataFilename, version); err != nil {
+			return err
+		}
+	}
+	// The randomizer comes with a bunch of binaries.
+	// Without making these executable, the program won't run.
+	binaries := []string{
+		filepath.Join(pkg.installDir, "Compress/Compress"),
+		filepath.Join(pkg.installDir, "Compress/Compress.exe"),
+		filepath.Join(pkg.installDir, "Decompress/Decompress"),
+		filepath.Join(pkg.installDir, "Decompress/Decompress.exe"),
+		filepath.Join(pkg.installDir, "bin/Compress/Compress"),
+		filepath.Join(pkg.installDir, "bin/Compress/Compress.exe"),
+		filepath.Join(pkg.installDir, "bin/Decompress/Decompress"),
+		filepath.Join(pkg.installDir, "bin/Decompress/Decompress.exe"),
+	}
+	for _, name := range binaries {
+		if err := os.Chmod(name, 0755); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			return err
+		}
 	}
 	return nil
 }
