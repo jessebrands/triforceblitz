@@ -1,8 +1,10 @@
 package randomizer
 
 import (
-	"os/exec"
+	"bufio"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/jessebrands/triforceblitz/internal/python"
 )
@@ -30,20 +32,12 @@ type GenerateSeedOpts struct {
 	RomFile   string
 }
 
-func (g *Generator) Generate(interpreter python.Interpreter, opts GenerateSeedOpts) (*exec.Cmd, error) {
-	// Create the settings file first.
-	settings := NewSettings(opts.Seed, opts.OutputDir, opts.RomFile)
-	settingsFile := filepath.Join(settings.OutputDir, SettingsFilename)
-	if err := settings.WriteFile(settingsFile); err != nil {
-		return nil, err
+func (g *Generator) CreateTask(seed, preset, outputDir, romFile string) *GeneratorTask {
+	return &GeneratorTask{
+		generator: g,
+		preset:    preset,
+		settings:  NewSettings(seed, outputDir, romFile),
 	}
-	// Call the generator, plain and simple!
-	cmd := interpreter.Command(
-		g.Entrypoint(),
-		SettingsPresetArg, opts.Preset,
-		SettingsFileArg, settingsFile,
-	)
-	return cmd, nil
 }
 
 func (g *Generator) Entrypoint() string {
@@ -56,4 +50,67 @@ func (g *Generator) String() string {
 
 func (p *Preset) String() string {
 	return p.Value
+}
+
+type GeneratorTask struct {
+	generator *Generator
+	preset    string
+	settings  GeneratorSettings
+
+	// OnMessage is called while the randomizer runs to report its
+	// messages.
+	//
+	// This callback is called from a goroutine.
+	OnMessage func(string)
+}
+
+func (t *GeneratorTask) run(interpreter python.Interpreter, settingsFile string) error {
+	cmd := interpreter.Command(
+		t.generator.Entrypoint(),
+		SettingsPresetArg, t.preset,
+		SettingsFileArg, settingsFile,
+	)
+	// The randomizer only writes to stderr, so grab the stderr pipe.
+	// We'll use this to forward log messages to the caller.
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+	defer stderr.Close()
+	go func() {
+		if t.OnMessage != nil {
+			scanner := bufio.NewScanner(stderr)
+			for scanner.Scan() {
+				text := strings.TrimRight(scanner.Text(), "\r\n\t ")
+				t.OnMessage(text)
+			}
+		}
+	}()
+	// We're all set up, let's run the command.
+	return cmd.Run()
+}
+
+func (t *GeneratorTask) verifyGeneratedFiles() error {
+	if t.settings.CreatePatch {
+		patchFile := filepath.Join(t.settings.OutputDir, t.settings.OutputFilename+".zpf")
+		if _, err := os.Stat(patchFile); os.IsNotExist(err) {
+			return ErrNoPatchFile
+		}
+	}
+	spoilerFile := filepath.Join(t.settings.OutputDir, t.settings.OutputFilename+"_Spoiler.json")
+	if _, err := os.Stat(spoilerFile); os.IsNotExist(err) {
+		return ErrNoSpoilerLog
+	}
+	return nil
+}
+
+func (t *GeneratorTask) Generate(interpreter python.Interpreter) error {
+	settingsFile := filepath.Join(t.settings.OutputDir, SettingsFilename)
+	if err := t.settings.WriteFile(settingsFile); err != nil {
+		return err
+	}
+	if err := t.run(interpreter, settingsFile); err != nil {
+		return err
+	}
+	return t.verifyGeneratedFiles()
 }

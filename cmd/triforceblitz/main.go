@@ -1,13 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"errors"
 	"flag"
 	"fmt"
 	"github.com/jessebrands/triforceblitz/internal/config"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/jessebrands/triforceblitz/internal/python"
@@ -101,43 +99,17 @@ func generateSeed(args []string) {
 		fmt.Printf("Could not select preset: %s\n", err.Error())
 		os.Exit(1)
 	}
-	// Generate the seed.
-	generatorOpts := randomizer.GenerateSeedOpts{
-		OutputDir: opts.OutDir,
-		Seed:      opts.Seed,
-		RomFile:   opts.RomFile,
-		Preset:    preset,
+	task := generator.CreateTask(opts.Seed, preset, opts.OutDir, opts.RomFile)
+	task.OnMessage = func(msg string) {
+		fmt.Printf("==> %s\n", msg)
 	}
 	fmt.Printf("Generating seed %s with generator %s using settings preset %s\n",
 		opts.Seed,
 		opts.Version.String(),
 		preset)
 	start := time.Now()
-	cmd, err := generator.Generate(interpreter, generatorOpts)
-	if err != nil {
-		fmt.Printf("Failed to invoke generator: %s\n", err.Error())
-		os.Exit(1)
-	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		fmt.Printf("Failed to get stderr from generator: %s\n", err.Error())
-		os.Exit(1)
-	}
-	defer stderr.Close()
-	scanner := bufio.NewScanner(stderr)
-	// At this point, we need to figure out a way to grab the output...
-	go func() {
-		for scanner.Scan() {
-			line := strings.TrimRight(scanner.Text(), " \t\r\n")
-			fmt.Printf("==> %s\n", line)
-		}
-	}()
-	if err := cmd.Start(); err != nil {
-		fmt.Printf("Failed to start randomizer: %s\n", err.Error())
-		os.Exit(1)
-	}
-	if err := cmd.Wait(); err != nil {
-		fmt.Printf("Failed to generate seed because of randomizer error: %s\n", err.Error())
+	if err := task.Generate(interpreter); err != nil {
+		fmt.Printf("Failed to generate seed: %s\n", err.Error())
 		os.Exit(1)
 	}
 	elapsed := time.Since(start)
