@@ -1,0 +1,40 @@
+name: Build artifacts
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Build triforceblitz CLI
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o triforceblitz ./cmd/triforceblitz
+
+      - name: Build triforceblitz-updater
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o triforceblitz-updater ./cmd/updater
+
+      - name: Build triforceblitz-server
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o triforceblitz-server ./cmd/server
+
+      - name: Publish build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-linux-amd64
+          path: |
+            triforceblitz
+            triforceblitz-updater
+            triforceblitz-server
