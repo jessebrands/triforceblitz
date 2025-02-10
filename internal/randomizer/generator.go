@@ -27,13 +27,6 @@ type Generator struct {
 	Presets PresetMap
 }
 
-type GenerateSeedOpts struct {
-	Seed      string
-	Preset    string
-	OutputDir string
-	RomFile   string
-}
-
 func (g *Generator) CreateTask(seed, preset, outputDir, romFile string) *GeneratorTask {
 	return &GeneratorTask{
 		generator: g,
