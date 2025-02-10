@@ -2,9 +2,11 @@ package randomizer
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jessebrands/triforceblitz/internal/python"
 )
@@ -69,7 +71,14 @@ func (t *GeneratorTask) run(interpreter python.Interpreter, settingsFile string)
 		t.generator.Entrypoint(),
 		SettingsPresetArg, t.preset,
 		SettingsFileArg, settingsFile,
+		"--no_log",
 	)
+	// Create the log file.
+	logfile, err := os.Create(filepath.Join(t.settings.OutputDir, "TriforceBlitz.log"))
+	if err != nil {
+		return err
+	}
+	defer logfile.Close()
 	// The randomizer only writes to stderr, so grab the stderr pipe.
 	// We'll use this to forward log messages to the caller.
 	stderr, err := cmd.StderrPipe()
@@ -78,10 +87,21 @@ func (t *GeneratorTask) run(interpreter python.Interpreter, settingsFile string)
 	}
 	defer stderr.Close()
 	go func() {
-		if t.OnMessage != nil {
-			scanner := bufio.NewScanner(stderr)
-			for scanner.Scan() {
-				text := strings.TrimRight(scanner.Text(), "\r\n\t ")
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			text := strings.TrimRight(scanner.Text(), "\r\n\t ")
+			// Old versions of the randomizer display this annoying, bugged header that isn't
+			// escaped properly and dumps a ton of Python source code out into the log.
+			// We do not like that so we kill it here.
+			if strings.Contains(text, ", and the latest is version ") {
+				continue
+			}
+			if text != "" {
+				_, _ = fmt.Fprintf(logfile, "[%v]  %s\n",
+					time.Now().Format(time.StampMilli),
+					text)
+			}
+			if t.OnMessage != nil {
 				t.OnMessage(text)
 			}
 		}
@@ -106,6 +126,10 @@ func (t *GeneratorTask) verifyGeneratedFiles() error {
 
 func (t *GeneratorTask) Generate(interpreter python.Interpreter) error {
 	settingsFile := filepath.Join(t.settings.OutputDir, SettingsFilename)
+	// Ensure output directory exists.
+	if err := os.MkdirAll(t.settings.OutputDir, 0755); err != nil {
+		return err
+	}
 	if err := t.settings.WriteFile(settingsFile); err != nil {
 		return err
 	}
