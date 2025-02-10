@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/jessebrands/triforceblitz/internal/config"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/jessebrands/triforceblitz/internal/python"
@@ -51,6 +52,17 @@ func ParseGenerateSeedOpts(args []string) (GenerateSeedOpts, error) {
 		} else {
 			opts.OutDir = dir
 		}
+	} else {
+		if dir, err := filepath.Abs(opts.OutDir); err != nil {
+			return opts, err
+		} else {
+			opts.OutDir = dir
+		}
+	}
+	if dir, err := filepath.Abs(opts.RomFile); err != nil {
+		return opts, err
+	} else {
+		opts.RomFile = dir
 	}
 	return opts, nil
 }
