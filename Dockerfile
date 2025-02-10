@@ -14,6 +14,12 @@ RUN go mod download
 # Copy common sources shared by all commands.
 COPY ./internal /usr/src/triforceblitz/internal
 
+# cmd/triforceblitz
+FROM build-environment AS cli-build
+ENV CGO_ENABLED=0
+
+COPY ./cmd/triforceblitz /usr/src/triforceblitz/cmd/triforceblitz
+RUN go build -o /usr/local/bin/triforceblitz ./cmd/triforceblitz
 
 # cmd/server
 FROM build-environment AS server-build
@@ -39,21 +45,16 @@ RUN go build -o /usr/local/bin/triforceblitz-updater ./cmd/updater
 FROM debian:bookworm-slim AS environment
 ENV TRIFORCEBLITZ_GENERATORS_DIR=/usr/local/share/triforceblitz/generators
 ENV TRIFORCEBLITZ_PACKAGE_CACHE_DIR=/var/cache/triforceblitz/packages
+ENV TRIFORCEBLITZ_LOCK_FILE=/var/lock/triforceblitz.lock
+
 RUN apt-get update -y && apt-get install -y \
     ca-certificates \
     python3
 
 COPY --from=updater-build /usr/local/bin/triforceblitz-updater /usr/local/bin/
 
-RUN mkdir -p /usr/local/share/triforceblitz/generators \
-    && mkdir -p /var/cache/triforceblitz/packages
-
-RUN useradd --system --shell /bin/bash triforceblitz
-RUN chown triforceblitz:triforceblitz -R /usr/local/share/triforceblitz \
-    && chown triforceblitz:triforceblitz -R /var/cache/triforceblitz
-
-USER triforceblitz:triforceblitz
 RUN triforceblitz-updater install -no-cache -b blitz
+RUN useradd --system --shell /bin/bash triforceblitz
 
 
 # Release stage. This is the actual image. We copy over the built server
@@ -62,6 +63,7 @@ FROM environment AS release
 ENV TRIFORCEBLITZ_GENERATORS_DIR=/usr/local/share/triforceblitz/generators
 ENV TRIFORCEBLITZ_PACKAGE_CACHE_DIR=/var/cache/triforceblitz/packages
 
+COPY --from=cli-build /usr/local/bin/triforceblitz /usr/local/bin/
 COPY --from=server-build /usr/local/bin/triforceblitz-server /usr/local/bin/
 
 USER triforceblitz:triforceblitz
