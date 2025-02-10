@@ -29,7 +29,7 @@ func ParseGenerateSeedOpts(args []string) (GenerateSeedOpts, error) {
 	flags := flag.NewFlagSet("generate", flag.ExitOnError)
 	flags.StringVar(&opts.Seed, "s", "", "random number generator seed passed to the generator")
 	flags.StringVar(&opts.Preset, "p", "default", "settings preset to use")
-	flags.Var(&opts.Version, "r", "generator version to use")
+	flags.Var(&opts.Version, "g", "generator version to use")
 	flags.StringVar(&opts.RomFile, "R", "", "ROM file to use")
 	flags.StringVar(&opts.OutDir, "o", "", "directory to store the result in")
 	if err := flags.Parse(args); err != nil {
