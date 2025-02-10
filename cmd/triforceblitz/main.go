@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/jessebrands/triforceblitz/internal/config"
 	"os"
 	"strings"
 	"time"
@@ -14,7 +15,7 @@ import (
 )
 
 var (
-	svc = randomizer.NewService(os.Getenv("TRIFORCEBLITZ_GENERATORS_DIR"))
+	svc = randomizer.NewService(config.GetGeneratorDir())
 )
 
 type GenerateSeedOpts struct {

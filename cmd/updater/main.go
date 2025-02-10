@@ -17,8 +17,7 @@ import (
 )
 
 var (
-	cacheDir = os.Getenv("TRIFORCEBLITZ_PACKAGE_CACHE_DIR")
-	manager  = pkgman.New()
+	manager = pkgman.New()
 )
 
 // listPackages lists all generators packages available.
