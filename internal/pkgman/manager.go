@@ -1,8 +1,9 @@
-package main
+package pkgman
 
 import (
 	"context"
 	"errors"
+	"github.com/jessebrands/triforceblitz/internal/config"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -19,9 +20,9 @@ type PackageManager struct {
 	index      PackageIndex
 }
 
-func NewPackageManager(installDir string) *PackageManager {
+func New() *PackageManager {
 	return &PackageManager{
-		installDir: installDir,
+		installDir: config.GetGeneratorDir(),
 		index:      make(PackageIndex),
 	}
 }

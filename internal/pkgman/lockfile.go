@@ -1,4 +1,4 @@
-package manager
+package pkgman
 
 import (
 	"errors"
@@ -11,12 +11,12 @@ type LockFile struct {
 	name string
 }
 
-// acquire attempts to acquire the lock file.
+// Acquire attempts to Acquire the lock file.
 //
 // # If the lock file already exists, it will return ErrLockFileLocked
 //
 // If the lock file cannot be created,
-func (l *LockFile) acquire() error {
+func (l *LockFile) Acquire() error {
 	if locked, err := l.Locked(); err != nil {
 		return err
 	} else if locked {
@@ -34,16 +34,16 @@ func (l *LockFile) acquire() error {
 	return nil
 }
 
-func (l *LockFile) release() error {
+func (l *LockFile) Release() error {
 	return os.Remove(l.name)
 }
 
 func (l *LockFile) Lock(f func()) error {
-	if err := l.acquire(); err != nil {
+	if err := l.Acquire(); err != nil {
 		return err
 	}
 	f()
-	return l.release()
+	return l.Release()
 }
 
 func (l *LockFile) Locked() (bool, error) {

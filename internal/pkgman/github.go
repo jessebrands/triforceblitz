@@ -1,10 +1,11 @@
-package main
+package pkgman
 
 import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
 	"errors"
+	"github.com/jessebrands/triforceblitz/internal/config"
 	"io"
 	"net/http"
 	"os"
@@ -30,8 +31,8 @@ type GitHubPackage struct {
 }
 
 // NewGitHubSource creates a new Source that sources Packages from GitHub.
-func NewGitHubSource(client *github.Client, owner, repo string, cacheDir string) *GitHubSource {
-	cacheDir = filepath.Join(cacheDir, "github", owner, repo)
+func NewGitHubSource(client *github.Client, repo, owner string) *GitHubSource {
+	cacheDir := filepath.Join(config.GetPackageCacheDir(), "github", owner, repo)
 
 	return &GitHubSource{
 		client:   client,
@@ -56,7 +57,7 @@ func (s *GitHubSource) Update(ctx context.Context) error {
 		for _, r := range releases {
 			version, err := randomizer.VersionFromString(r.GetTagName())
 			if err != nil {
-				// Tag has an invalid Triforce Blitz version, so this is not a TFB release.
+				// Tag has an invalid Triforce Blitz version, so this is not a TFB Release.
 				// Just skip it, this is not an error.
 				continue
 			}

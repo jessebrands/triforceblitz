@@ -4,6 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/jessebrands/triforceblitz/internal/pkgman"
+	"github.com/jessebrands/triforceblitz/internal/pkgman/installer"
 	"log/slog"
 	"os"
 	"strings"
@@ -16,7 +18,7 @@ import (
 
 var (
 	cacheDir = os.Getenv("TRIFORCEBLITZ_PACKAGE_CACHE_DIR")
-	manager  = NewPackageManager(os.Getenv("TRIFORCEBLITZ_GENERATORS_DIR"))
+	manager  = pkgman.New()
 )
 
 // listPackages lists all generators packages available.
@@ -48,7 +50,7 @@ func install(args []string) {
 		whitelist = strings.Split(*branches, ",")
 	}
 
-	installer := NewInstaller(manager)
+	installer := installer.New(manager)
 	installer.CachePackages = !*noCache
 
 	if len(candidates) > 0 {
@@ -62,7 +64,7 @@ func install(args []string) {
 	}
 }
 
-func installCandidates(installer *Installer, candidates []string) ([]randomizer.Version, error) {
+func installCandidates(installer *installer.Installer, candidates []string) ([]randomizer.Version, error) {
 	// Turn candidates into versions:
 	var versions []randomizer.Version
 	for _, c := range candidates {
@@ -79,7 +81,7 @@ func installCandidates(installer *Installer, candidates []string) ([]randomizer.
 func main() {
 	// Initialize the package manager.
 	client := github.NewClient(nil)
-	manager.AddSource(NewGitHubSource(client, "Elagatua", "OoT-Randomizer", cacheDir))
+	manager.AddSource(pkgman.NewGitHubSource(client, "OoT-Randomizer", "Elagatua"))
 	if err := manager.Update(context.Background()); err != nil {
 		slog.Error("Could not refresh package index.", "error", err)
 	}
