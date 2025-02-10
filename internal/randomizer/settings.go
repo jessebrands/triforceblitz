@@ -8,28 +8,28 @@ import (
 
 type GeneratorSettings struct {
 	// String used to seed the randomizer.
-	Seed string `json:"seed"`
+	Seed string
 
 	// Where to store generated files.
-	OutputDir string `json:"output_dir"`
+	OutputDir string
 
 	// Filename of outputted files.
-	OutputFilename string `json:"output_file"`
+	OutputFilename string
 
 	// Path to the ROM file.
-	RomFile string `json:"rom"`
+	RomFile string
 
 	// Whether to create a patch file.
-	CreatePatch bool `json:"create_patch_file"`
+	CreatePatch bool
 
 	// Whether to create a compressed ROM file.
-	CreateCompressedRom bool `json:"create_compressed_rom"`
+	CreateCompressedRom bool
 
 	// Whether to output a cosmetics log.
-	CreateCosmeticsLog bool `json:"create_cosmetics_log"`
+	CreateCosmeticsLog bool
 
 	// Legacy setting that controls ROM output.
-	CompressRom string `json:"compress_rom"`
+	CompressRom string
 }
 
 func NewSettings(randomizerSeed string, outDir string, romFile string) GeneratorSettings {
@@ -66,5 +66,23 @@ func (g *GeneratorSettings) WriteJSON(w io.Writer) error {
 }
 
 func (g *GeneratorSettings) MarshalJSON() ([]byte, error) {
-	return json.Marshal(g)
+	return json.Marshal(struct {
+		Seed                string `json:"seed"`
+		OutputDir           string `json:"output_dir"`
+		OutputFilename      string `json:"output_file"`
+		RomFile             string `json:"rom"`
+		CreatePatch         bool   `json:"create_patch_file"`
+		CreateCompressedRom bool   `json:"create_compressed_rom"`
+		CreateCosmeticsLog  bool   `json:"create_cosmetics_log"`
+		CompressRom         string `json:"compress_rom"`
+	}{
+		Seed:                g.Seed,
+		OutputDir:           g.OutputDir,
+		OutputFilename:      g.OutputFilename,
+		RomFile:             g.RomFile,
+		CreatePatch:         g.CreatePatch,
+		CreateCompressedRom: g.CreateCompressedRom,
+		CreateCosmeticsLog:  g.CreateCosmeticsLog,
+		CompressRom:         g.CompressRom,
+	})
 }
