@@ -78,6 +78,15 @@ func installCandidates(installer *pkgman.Installer, candidates []string) ([]rand
 }
 
 func main() {
+	// Check that the output directories even exist.
+	if err := os.MkdirAll(config.GetGeneratorDir(), 0755); err != nil {
+		fmt.Printf("Cannot create generator directory: %v\n", err)
+		os.Exit(1)
+	}
+	if err := os.MkdirAll(config.GetPackageCacheDir(), 0755); err != nil {
+		fmt.Printf("Cannot create package cache directory: %v\n", err)
+		os.Exit(1)
+	}
 	// Acquire a lockfile lock first.
 	lockfile := pkgman.NewLockFile(config.GetLockFilename())
 	err := lockfile.Lock(func() {
