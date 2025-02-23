@@ -13,7 +13,7 @@ import java.util.Objects;
  * <p>Randomizers must be implemented from the outside as they invoke an
  * external process, this is left as an implementation detail.</p>
  */
-public abstract class Randomizer {
+public class Randomizer {
     /// Version that uniquely identifies the randomizer.
     private final RandomizerVersion version;
 

@@ -10,7 +10,7 @@ class RandomizerTests {
 
     @BeforeEach
     void setUp() {
-        randomizer = new TestRandomizer(RandomizerVersion.of("1.0.0-blitz-1.0"));
+        randomizer = new Randomizer(RandomizerVersion.of("1.0.0-blitz-1.0"));
     }
 
     @Test
@@ -40,27 +40,27 @@ class RandomizerTests {
 
     @Test
     void equals_whenEqual_returnsTrue() {
-        var other = new TestRandomizer(RandomizerVersion.of("1.0.0-blitz-1.0"));
+        var other = new Randomizer(RandomizerVersion.of("1.0.0-blitz-1.0"));
         assertThat(randomizer).isEqualTo(other);
     }
 
     @Test
     void equals_whenNotEqual_returnsFalse() {
         var string = "1.0.0-blitz-1.0";
-        var other =  new TestRandomizer(RandomizerVersion.of("1.2.1-blitz-1.0"));
+        var other =  new Randomizer(RandomizerVersion.of("1.2.1-blitz-1.0"));
         assertThat(randomizer).isNotEqualTo(string);
         assertThat(randomizer).isNotEqualTo(other);
     }
 
     @Test
     void hashCode_whenEqual_isEqual() {
-        var other = new TestRandomizer(RandomizerVersion.of("1.0.0-blitz-1.0"));
+        var other = new Randomizer(RandomizerVersion.of("1.0.0-blitz-1.0"));
         assertThat(randomizer.hashCode()).isEqualTo(other.hashCode());
     }
 
     @Test
     void hashCode_whenNotEqual_isNotEqual() {
-        var other =  new TestRandomizer(RandomizerVersion.of("1.2.1-blitz-1.0"));
+        var other =  new Randomizer(RandomizerVersion.of("1.2.1-blitz-1.0"));
         assertThat(randomizer.hashCode()).isNotEqualTo(other.hashCode());
     }
 
