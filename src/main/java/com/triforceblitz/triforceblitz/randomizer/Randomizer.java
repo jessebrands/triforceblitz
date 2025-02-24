@@ -1,6 +1,9 @@
 package com.triforceblitz.triforceblitz.randomizer;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Core domain object of the randomizer package.
@@ -17,14 +20,33 @@ public class Randomizer {
     /// Version that uniquely identifies the randomizer.
     private final RandomizerVersion version;
 
+    /// Presets associated with this Randomizer.
+    private final Map<String, Preset> presets = new HashMap<>();
+
     /// Flag that sets whether the randomizer can be used to generate ROMs.
     private boolean enabled;
 
     /// Flag that sets whether the randomizer is a prerelease version.
     private boolean prerelease;
 
+    /**
+     * Constructs a new Randomizer instance.
+     *
+     * @param version Version of the randomizer.
+     */
     public Randomizer(RandomizerVersion version) {
         this.version = version;
+    }
+
+    /**
+     * Constructs a new Randomizer instance.
+     *
+     * @param version Version of the randomizer.
+     * @param presets Initial presets.
+     */
+    public Randomizer(RandomizerVersion version, Map<String, Preset> presets) {
+        this.version = version;
+        this.presets.putAll(presets);
     }
 
     /**
@@ -34,6 +56,37 @@ public class Randomizer {
      */
     public RandomizerVersion getVersion() {
         return version;
+    }
+
+    /**
+     * Gets a preset by name.
+     *
+     * @param name Name of the preset.
+     * @return {@link Optional} containing the preset if found, empty if not.
+     */
+    public Optional<Preset> getPreset(String name) {
+        return Optional.ofNullable(presets.get(name));
+    }
+
+    /**
+     * Checks if this randomizer has a preset.
+     *
+     * @param name Name of the preset.
+     * @return <code>true</code> if the preset exists, <code>false</code> if
+     * not.
+     */
+    public boolean hasPreset(String name) {
+        return presets.containsKey(name);
+    }
+
+    /**
+     * Adds a new preset to the randomizer.
+     *
+     * @param name   Name of the preset.
+     * @param preset The preset to add.
+     */
+    public void addPreset(String name, Preset preset) {
+        presets.put(name, preset);
     }
 
     /**

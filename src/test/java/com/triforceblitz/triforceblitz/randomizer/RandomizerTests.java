@@ -3,6 +3,8 @@ package com.triforceblitz.triforceblitz.randomizer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class RandomizerTests {
@@ -10,7 +12,10 @@ class RandomizerTests {
 
     @BeforeEach
     void setUp() {
-        randomizer = new Randomizer(RandomizerVersion.of("1.0.0-blitz-1.0"));
+        randomizer = new Randomizer(
+                RandomizerVersion.of("1.0.0-blitz-1.0"),
+                Map.of("Triforce Blitz", new Preset())
+        );
     }
 
     @Test
@@ -18,6 +23,33 @@ class RandomizerTests {
         var version = randomizer.getVersion();
         var expected = new RandomizerVersion(1, 0, 0, "blitz", 1, 0);
         assertThat(version).isEqualTo(expected);
+    }
+
+    @Test
+    void getPreset_ifExists_isPresent() {
+        assertThat(randomizer.getPreset("Triforce Blitz")).isPresent();
+    }
+
+    @Test
+    void getPreset_ifNotExists_isEmpty() {
+        assertThat(randomizer.getPreset("DoesNotExist")).isEmpty();
+    }
+
+    @Test
+    void hasPreset_ifExists_isTrue() {
+        assertThat(randomizer.hasPreset("Triforce Blitz")).isTrue();
+    }
+
+    @Test
+    void hasPreset_ifExists_isFalse() {
+        assertThat(randomizer.hasPreset("DoesNotExist")).isFalse();
+    }
+
+    @Test
+    void addPreset_whenAdded_canBeFound() {
+        assertThat(randomizer.hasPreset("Triforce Blitz S2")).isFalse();
+        randomizer.addPreset("Triforce Blitz S2", new Preset());
+        assertThat(randomizer.hasPreset("Triforce Blitz S2")).isTrue();
     }
 
     @Test
